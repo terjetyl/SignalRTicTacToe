@@ -1,0 +1,18 @@
+/* squares */
+#ticTacToeGrid > tbody > tr > td
+{
+    height: 50px;
+    text-align: center;
+    vertical-align: middle;
+    width: 50px;
+}
+
+#ticTacToeGrid
+{
+    background-color: black;
+}
+
+#ticTacToeGrid > tbody > tr
+{
+    background-color: white;
+}
