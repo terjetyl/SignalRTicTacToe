@@ -30,7 +30,7 @@ namespace SignalRTicTacToe.Tests
             ticTacToe.PlaceO(row, col);
         }
 
-        private void PlayThreeInARowForX()
+        private void XWinsWithThreeInARow()
         {
             PlaceX(0, 0);
             PlaceO(1, 0);
@@ -39,7 +39,26 @@ namespace SignalRTicTacToe.Tests
             PlaceX(0, 2);
         }
 
-        private void PlayDraw()
+        private void XWinsWithThreeInAColumn()
+        {
+            PlaceX(0, 0);
+            PlaceO(1, 1);
+            PlaceX(1, 0);
+            PlaceO(1, 2);
+            PlaceX(2, 0);
+        }
+
+        private void OWinsWithThreeInADiagonal()
+        {
+            PlaceX(0, 0);
+            PlaceO(0, 2);
+            PlaceX(0, 1);
+            PlaceO(1, 1);
+            PlaceX(1, 0);
+            PlaceO(2, 0);
+        }
+
+        private void PlayUntilDraw()
         {
             PlaceX(0, 0);
             PlaceO(1, 0);
@@ -52,14 +71,18 @@ namespace SignalRTicTacToe.Tests
             PlaceX(2, 2);
         }
 
-        private void PassIfGameCompleted()
+        private void PassIfGameCompleted(Action playGame)
         {
-            ticTacToe.GameCompleted += sender => Assert.Pass();
+            ticTacToe.GameCompleted += (sender) => Assert.Pass();
+
+            playGame.Invoke();
+
+            Assert.Fail();
         }
 
         private void PlayCompleteGameAndReset()
         {
-            PlayDraw();
+            PlayUntilDraw();
 
             ticTacToe.Reset();
         }
@@ -128,7 +151,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestThreeInARowWins()
         {
-            PlayThreeInARowForX();
+            XWinsWithThreeInARow();
 
             Assert.AreEqual(GameState.XWins, ticTacToe.Status);
         }
@@ -136,11 +159,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestThreeInAColumnWins()
         {
-            PlaceX(0, 0);
-            PlaceO(1, 1);
-            PlaceX(1, 0);
-            PlaceO(1, 2);
-            PlaceX(2, 0);
+            XWinsWithThreeInAColumn();
 
             Assert.AreEqual(GameState.XWins, ticTacToe.Status);
         }
@@ -148,12 +167,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestThreeInADiagonalWins()
         {
-            PlaceX(0, 0);
-            PlaceO(0, 2);
-            PlaceX(0, 1);
-            PlaceO(1, 1);
-            PlaceX(1, 0);
-            PlaceO(2, 0);
+            OWinsWithThreeInADiagonal();
 
             Assert.AreEqual(GameState.OWins, ticTacToe.Status);
         }
@@ -161,7 +175,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestDraw()
         {
-            PlayDraw();
+            PlayUntilDraw();
 
             Assert.AreEqual(GameState.Draw, ticTacToe.Status);
         }
@@ -169,21 +183,13 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenGameIsWon_NotifyGameCompleted()
         {
-            PassIfGameCompleted();
-
-            PlayThreeInARowForX();
-
-            Assert.Fail();
+            PassIfGameCompleted(XWinsWithThreeInARow);
         }
 
         [Test]
         public void WhenDrawOccurs_NotifyGameCompleted()
         {
-            PassIfGameCompleted();
-
-            PlayDraw();
-
-            Assert.Fail();
+            PassIfGameCompleted(PlayUntilDraw);
         }
 
         [Test]
