@@ -1,0 +1,5 @@
+- Clean up TicTacToeTests.
+- Add more tests for TicTacToeServer or rewrite using TDD.
+- Alternate who goes first after each game.
+- Rotate in spectators.
+- Keep tally of wins.
