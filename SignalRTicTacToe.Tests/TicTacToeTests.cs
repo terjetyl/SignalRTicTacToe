@@ -20,36 +20,36 @@ namespace SignalRTicTacToe.Tests
             }
         }
 
-        private void PlaceX(int row, int col)
+        private void XMoves(int row, int col)
         {
             ticTacToe.PlaceX(row, col);
         }
 
-        private void PlaceO(int row, int col)
+        private void OMoves(int row, int col)
         {
             ticTacToe.PlaceO(row, col);
         }
 
-        private void PlayThreeInARowForX()
+        private void XWinsWithThreeInARow()
         {
-            PlaceX(0, 0);
-            PlaceO(1, 0);
-            PlaceX(0, 1);
-            PlaceO(1, 1);
-            PlaceX(0, 2);
+            XMoves(0, 0);
+            OMoves(1, 0);
+            XMoves(0, 1);
+            OMoves(1, 1);
+            XMoves(0, 2);
         }
 
-        private void PlayDraw()
+        private void Draw()
         {
-            PlaceX(0, 0);
-            PlaceO(1, 0);
-            PlaceX(0, 1);
-            PlaceO(0, 2);
-            PlaceX(2, 0);
-            PlaceO(1, 1);
-            PlaceX(1, 2);
-            PlaceO(2, 1);
-            PlaceX(2, 2);
+            XMoves(0, 0);
+            OMoves(1, 0);
+            XMoves(0, 1);
+            OMoves(0, 2);
+            XMoves(2, 0);
+            OMoves(1, 1);
+            XMoves(1, 2);
+            OMoves(2, 1);
+            XMoves(2, 2);
         }
 
         private void PassIfGameCompleted()
@@ -59,8 +59,7 @@ namespace SignalRTicTacToe.Tests
 
         private void PlayCompleteGameAndReset()
         {
-            PlayDraw();
-
+            Draw();
             ticTacToe.Reset();
         }
 
@@ -79,8 +78,8 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestGetSquareStateReturnsProperState()
         {
-            PlaceX(1, 1);
-            PlaceO(2, 2);
+            XMoves(1, 1);
+            OMoves(2, 2);
 
             Assert.AreEqual(PlayerType.X, ticTacToe.GetSquareState(1, 1));
             Assert.AreEqual(PlayerType.O, ticTacToe.GetSquareState(2, 2));
@@ -96,39 +95,39 @@ namespace SignalRTicTacToe.Tests
         [ExpectedException(typeof(OutOfTurnException))]
         public void TestODoesNotMoveFirst()
         {
-            PlaceO(0, 0);
+            OMoves(0, 0);
         }
 
         [Test]
         [ExpectedException(typeof(OutOfTurnException))]
         public void TestXCannotTakeTwoConsecutiveTurns()
         {
-            PlaceX(0, 0);
-            PlaceX(1, 1);
+            XMoves(0, 0);
+            XMoves(1, 1);
         }
 
         [Test]
         [ExpectedException(typeof(OutOfTurnException))]
         public void TestOCannotTakeTwoConsecutiveTurns()
         {
-            PlaceX(0, 0);
-            PlaceO(1, 1);
-            PlaceO(1, 2);
+            XMoves(0, 0);
+            OMoves(1, 1);
+            OMoves(1, 2);
         }
 
         [Test]
         [ExpectedException(typeof(InvalidOperationException))]
         public void TestMarkCannotBePlacedOnSameSquareTwice()
         {
-            PlaceX(0, 0);
-            PlaceO(1, 1);
-            PlaceX(0, 0);
+            XMoves(0, 0);
+            OMoves(1, 1);
+            XMoves(0, 0);
         }
 
         [Test]
         public void TestThreeInARowWins()
         {
-            PlayThreeInARowForX();
+            XWinsWithThreeInARow();
 
             Assert.AreEqual(GameState.XWins, ticTacToe.Status);
         }
@@ -136,11 +135,11 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestThreeInAColumnWins()
         {
-            PlaceX(0, 0);
-            PlaceO(1, 1);
-            PlaceX(1, 0);
-            PlaceO(1, 2);
-            PlaceX(2, 0);
+            XMoves(0, 0);
+            OMoves(1, 1);
+            XMoves(1, 0);
+            OMoves(1, 2);
+            XMoves(2, 0);
 
             Assert.AreEqual(GameState.XWins, ticTacToe.Status);
         }
@@ -148,12 +147,12 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestThreeInADiagonalWins()
         {
-            PlaceX(0, 0);
-            PlaceO(0, 2);
-            PlaceX(0, 1);
-            PlaceO(1, 1);
-            PlaceX(1, 0);
-            PlaceO(2, 0);
+            XMoves(0, 0);
+            OMoves(0, 2);
+            XMoves(0, 1);
+            OMoves(1, 1);
+            XMoves(1, 0);
+            OMoves(2, 0);
 
             Assert.AreEqual(GameState.OWins, ticTacToe.Status);
         }
@@ -161,7 +160,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void TestDraw()
         {
-            PlayDraw();
+            Draw();
 
             Assert.AreEqual(GameState.Draw, ticTacToe.Status);
         }
@@ -171,7 +170,7 @@ namespace SignalRTicTacToe.Tests
         {
             PassIfGameCompleted();
 
-            PlayThreeInARowForX();
+            XWinsWithThreeInARow();
 
             Assert.Fail();
         }
@@ -181,7 +180,7 @@ namespace SignalRTicTacToe.Tests
         {
             PassIfGameCompleted();
 
-            PlayDraw();
+            Draw();
 
             Assert.Fail();
         }

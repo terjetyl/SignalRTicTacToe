@@ -1,72 +1,53 @@
+using System;
 using NUnit.Framework;
 using SignalRTicTacToe.Web;
 
 namespace SignalRTicTacToe.Tests
 {
+    // Connect
+        // When first connects, assign as x
+        // When second connects, assign as o
+        // when third or later, assign as spectator
+        // When user is assigned as X, notdify user
+        // When user is assigned as O, notify user
+        // When user is assigned as Spectator, notify user
+        // If X is unassigned, assign as x
+        // If O is unassigned, assign as o
+        // Start game when X and O have been assigned
+        // Notify users when game starts
+    // Disconnect
+        // When X disconnects, assign next spectator as X
+        // When O disconnects, assign next spectator as O
+        // When X disconnects, reset game
+        // When O, disconnect, reset game
+    // PlaceMark
+        // Do not allow if game not started
+        // Ignore if not their turn
+
+    // When game ends, reset after 10 seconds
+    // When game ends, winner swaps with other player
+    // When game ends, loser is replaced by spectator
+
     [TestFixture]
     public class TicTacToeServerTests
     {
-        private int clientCount;
-
-        private TicTacToeServer server;
-
-        // Games starts when player O arrives        
-        // Game ends when player X or O wins or draws.
-
-        private void Connect()
-        {
-            server.Connect((++clientCount).ToString());
-        }
-
-        private void ConnectMany(int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                Connect();
-            }
-        }
-
-        [SetUp]
-        public void SetUp()
-        {
-            clientCount = 0;
-            server = new TicTacToeServer();
-        }
-
         [Test]
-        public void FirstUserIsAssignedAsPlayerX()
+        public void Murloc()
         {
-            Connect();
+            TicTacToeServer server = new TicTacToeServer();
+            server.Connect();
+            server.PlayerXConnected += (sender) => Assert.Pass();
+            Assert.Fail();
+        }
+    }
 
-            Assert.AreEqual("1", server.PlayerX);
+    public class TicTacToeServer
+    {
+        public void Connect()
+        {
+            throw new System.NotImplementedException();
         }
 
-        [Test]
-        public void SecondUserIsAssignedAsPlayerO()
-        {
-            ConnectMany(2);
-
-            Assert.AreEqual("2", server.PlayerO);
-        }
-
-        [Test]
-        public void WhenPlayerXDisconnectsReplaceWithFirstSpectator()
-        {
-            ConnectMany(3);
-
-            server.Disconnect("1");
-
-            Assert.AreEqual("3", server.PlayerX);
-        }
-
-        [Test]
-        public void WhenPlayerODisconnectsReplaceWithFirstSpectator()
-        {
-            ConnectMany(3);
-
-            server.Disconnect("2");
-
-            Assert.AreEqual("3", server.PlayerO);
-        }
+        public event Action<object> PlayerXConnected;
     }
 }
