@@ -1,8 +1,8 @@
-- Refactor TicTacToeTests.
+- Clean up TicTacToeTests.
 - Create TicTacToeServer tests (or rewrite using TDD).
 - Create TicTacToeHub tests.
 
-- Swap who goes first after game ends.
+- Alternate who goes first after each game.
 - Rotate in spectators.
 	- Winner stays.
 	- Keep playing if draw.
