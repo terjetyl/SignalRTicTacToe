@@ -1,16 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Moq;
 using NUnit.Framework;
 using SignalRTicTacToe.Web;
 
 namespace SignalRTicTacToe.Tests
 {
     // Connect
-        // When first connects, assign as x
-        // When second connects, assign as o
-        // when third or later, assign as spectator
-        // When user is assigned as X, notdify user
-        // When user is assigned as O, notify user
-        // When user is assigned as Spectator, notify user
         // If X is unassigned, assign as x
         // If O is unassigned, assign as o
         // Start game when X and O have been assigned
@@ -31,23 +28,181 @@ namespace SignalRTicTacToe.Tests
     [TestFixture]
     public class TicTacToeServerTests
     {
-        [Test]
-        public void Murloc()
+        private List<string> clients;
+
+        protected Mock<ITicTacToeClientUpdater> clientUpdater;
+        protected Mock<ITicTacToe> game;
+
+        protected TicTacToeServer server;
+
+        private string PlayerX
         {
-            TicTacToeServer server = new TicTacToeServer();
-            server.Connect();
-            server.PlayerXConnected += (sender) => Assert.Pass();
-            Assert.Fail();
+            get { return clients[0]; }
+        }
+
+        private string PlayerO
+        {
+            get { return clients[1]; }
+        }
+
+        private void ConnectPlayerXAndO()
+        {
+            if (clients.Any())
+                throw new InvalidOperationException("Player X and O are already connected.");
+            ConnectMany(2);
+        }
+
+        private void Connect()
+        {
+            string clientId = (clients.Count + 1).ToString();
+            clients.Add(clientId);
+
+            server.Connect(clientId);
+        }
+
+        private void ConnectMany(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                Connect();
+            }
+        }
+
+        [SetUp]
+        public void SetUp()
+        {
+            clients = new List<string>();
+            clientUpdater = new Mock<ITicTacToeClientUpdater>();
+            game = new Mock<ITicTacToe>();
+            server = new TicTacToeServer(game.Object, clientUpdater.Object);
+
+            ConnectPlayerXAndO();
+        }
+
+        [Test]
+        public void WhenFirstClientArrives_AssignToX()
+        {
+            clientUpdater.Verify(x => x.SendMessage(clients[0], "You are X's."), Times.Once());
+        }
+
+        [Test]
+        public void WhenSecondClientArrives_AssignToO()
+        {
+            clientUpdater.Verify(x => x.SendMessage(clients[1], "You are O's."), Times.Once());
+        }
+
+        [Test]
+        public void WhenAnyClientAfterTheSecondArrives_DesignateAsSpectator()
+        {
+            ConnectMany(2);
+
+            clientUpdater.Verify(x => x.SendMessage(clients[2], "You are a spectator."), Times.Once());
+            clientUpdater.Verify(x => x.SendMessage(clients[3], "You are a spectator."), Times.Once());
+        }
+
+        [Test]
+        public void WhenPlayerXPlacesMark_PlaceX()
+        {
+            server.PlaceMark(PlayerX, 1, 1);
+
+            game.Verify(x => x.PlaceX(1, 1));
+        }
+
+        [Test]
+        public void WhenPlayerOPlacesMark_PlaceO()
+        {
+            server.PlaceMark(PlayerX, 1, 1);
+            server.PlaceMark(PlayerO, 0, 0);
+
+            game.Verify(x => x.PlaceO(0, 0), Times.Once());
+        }
+
+        [Test]
+        public void WhenPlayerXPlacesMark_UpdateClientSquares()
+        {
+            server.PlaceMark(PlayerX, 1, 1);
+
+            clientUpdater.Verify(x => x.UpdateSquare(1, 1, "X"), Times.Once());
+        }
+
+        [Test]
+        public void WhenPlayerOPlacesMark_UpdateClientSquares()
+        {
+            server.PlaceMark(PlayerX, 1, 1);
+            server.PlaceMark(PlayerO, 0, 0);
+
+            clientUpdater.Verify(x => x.UpdateSquare(0, 0, "O"), Times.Once());
+        }
+
+        [Test]
+        [Ignore]
+        public void WhenGameCompleted_DoSomething()
+        {
+            // TODO: ???
         }
     }
 
     public class TicTacToeServer
     {
-        public void Connect()
+        private readonly ITicTacToeClientUpdater _clientUpdater;
+
+        private string _playerX;
+        private string _playerO;
+
+        private readonly ITicTacToe _ticTacToeGame;
+
+        public TicTacToeServer(ITicTacToe ticTacToeGame, ITicTacToeClientUpdater clientUpdater)
         {
-            throw new System.NotImplementedException();
+            _ticTacToeGame = ticTacToeGame;
+            _clientUpdater = clientUpdater;
         }
 
-        public event Action<object> PlayerXConnected;
+        private bool IsPlayerXUnassigned
+        {
+            get { return _playerX == null; }
+        }
+
+        private bool IsPlayerOUnassigned
+        {
+            get { return _playerO == null; }
+        }
+
+        public void Connect(string clientId)
+        {
+            if (IsPlayerXUnassigned)
+            {
+                _playerX = clientId;
+                _clientUpdater.SendMessage(clientId, "You are X's.");
+            }
+            else if (IsPlayerOUnassigned)
+            {
+                _playerO = clientId;
+                _clientUpdater.SendMessage(clientId, "You are O's.");
+            }
+            else
+            {
+                _clientUpdater.SendMessage(clientId, "You are a spectator.");
+            }
+        }
+
+        public void PlaceMark(string clientId, int row, int col)
+        {
+            if (clientId == _playerX)
+            {
+                _ticTacToeGame.PlaceX(row, col);
+                _clientUpdater.UpdateSquare(row, col, "X");
+            }
+            else if (clientId == _playerO)
+            {
+                _ticTacToeGame.PlaceO(row, col);
+                _clientUpdater.UpdateSquare(row, col, "O");
+            }
+        }
+    }
+
+    public interface ITicTacToeClientUpdater
+    {
+        void SendMessage(string clientId, string message);
+        void UpdateSquare(int row, int col, string mark);
     }
 }
