@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Moq;
 using NUnit.Framework;
-using SignalRTicTacToe.Web;
+using SignalRTicTacToe.Web.Code;
 
 namespace SignalRTicTacToe.Tests
 {
@@ -19,9 +19,7 @@ namespace SignalRTicTacToe.Tests
         // When O, disconnect, reset game
     // PlaceMark
         // Do not allow if game not started
-        // Ignore if not their turn
 
-    // When game ends, reset after 10 seconds
     // When game ends, winner swaps with other player
     // When game ends, loser is replaced by spectator
 
@@ -68,6 +66,11 @@ namespace SignalRTicTacToe.Tests
             }
         }
 
+        private void NextTurnIsFor(PlayerType player)
+        {
+            game.SetupGet(x => x.CurrentTurn).Returns(player);
+        }
+
         private void VerifyThatSpecificMessageBroadcastedWhenGameCompleted(string message, GameState state)
         {
             game.Setup(g => g.Status).Returns(state);
@@ -81,6 +84,7 @@ namespace SignalRTicTacToe.Tests
         public void SetUp()
         {
             clients = new List<string>();
+
             clientUpdater = new Mock<ITicTacToeClientUpdater>();
             game = new Mock<ITicTacToe>();
             server = new TicTacToeServer(game.Object, clientUpdater.Object);
@@ -119,34 +123,40 @@ namespace SignalRTicTacToe.Tests
         }
 
         [Test]
-        public void WhenPlayerXPlacesMark_PlaceX()
+        public void WhenPlayerXPlacesMark_OnTheirTurn_PlaceX()
         {
+            NextTurnIsFor(PlayerType.X);
+            
             server.PlaceMark(PlayerX, 1, 1);
 
             game.Verify(x => x.PlaceX(1, 1));
         }
 
         [Test]
-        public void WhenPlayerOPlacesMark_PlaceO()
+        public void WhenPlayerOPlacesMark_OnTheirTurn_PlaceO()
         {
-            server.PlaceMark(PlayerX, 1, 1);
+            NextTurnIsFor(PlayerType.O);
+
             server.PlaceMark(PlayerO, 0, 0);
 
             game.Verify(x => x.PlaceO(0, 0), Times.Once());
         }
 
         [Test]
-        public void WhenPlayerXPlacesMark_UpdateClientSquares()
+        public void WhenPlayerXPlacesMark_OnTheirTurn_UpdateClientSquares()
         {
+            NextTurnIsFor(PlayerType.X);
+
             server.PlaceMark(PlayerX, 1, 1);
 
             clientUpdater.Verify(x => x.UpdateSquare(1, 1, "X"), Times.Once());
         }
 
         [Test]
-        public void WhenPlayerOPlacesMark_UpdateClientSquares()
+        public void WhenPlayerOPlacesMark_OnTheirTurn_UpdateClientSquares()
         {
-            server.PlaceMark(PlayerX, 1, 1);
+            NextTurnIsFor(PlayerType.O);
+
             server.PlaceMark(PlayerO, 0, 0);
 
             clientUpdater.Verify(x => x.UpdateSquare(0, 0, "O"), Times.Once());

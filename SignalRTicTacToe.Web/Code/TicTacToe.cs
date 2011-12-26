@@ -1,6 +1,6 @@
 using System;
 
-namespace SignalRTicTacToe.Web
+namespace SignalRTicTacToe.Web.Code
 {
     public enum GameState
     {
@@ -17,6 +17,8 @@ namespace SignalRTicTacToe.Web
         O
     }
 
+    public delegate void GameCompletedDelegate(object sender);
+
     public class OutOfTurnException : InvalidOperationException
     {
     }
@@ -24,8 +26,6 @@ namespace SignalRTicTacToe.Web
     public class TicTacToe : ITicTacToe
     {
         private readonly PlayerType[,] _squares = new PlayerType[3, 3];
-
-        public delegate void GameCompletedDelegate(object sender);
 
         public TicTacToe()
         {

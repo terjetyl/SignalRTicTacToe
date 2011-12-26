@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SignalRTicTacToe.Web
+namespace SignalRTicTacToe.Web.Code
 {
     public class TicTacToeServer
     {

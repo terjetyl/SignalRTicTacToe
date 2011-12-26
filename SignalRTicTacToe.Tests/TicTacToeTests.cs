@@ -1,6 +1,6 @@
 using System;
 using NUnit.Framework;
-using SignalRTicTacToe.Web;
+using SignalRTicTacToe.Web.Code;
 
 namespace SignalRTicTacToe.Tests
 {

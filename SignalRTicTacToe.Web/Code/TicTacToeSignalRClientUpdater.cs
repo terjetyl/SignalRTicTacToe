@@ -1,6 +1,6 @@
-﻿using SignalR.Hubs;
+using SignalR.Hubs;
 
-namespace SignalRTicTacToe.Web
+namespace SignalRTicTacToe.Web.Code
 {
     public class TicTacToeSignalRClientUpdater : ITicTacToeClientUpdater
     {

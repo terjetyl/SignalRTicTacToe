@@ -1,7 +1,6 @@
-using System;
 using SignalR.Hubs;
 
-namespace SignalRTicTacToe.Web
+namespace SignalRTicTacToe.Web.Code
 {
     public class TicTacToeHub : Hub, IDisconnect
     {

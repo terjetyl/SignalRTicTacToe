@@ -1,4 +1,4 @@
-namespace SignalRTicTacToe.Web
+namespace SignalRTicTacToe.Web.Code
 {
     public interface ITicTacToeClientUpdater
     {
