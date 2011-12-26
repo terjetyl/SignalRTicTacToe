@@ -5,8 +5,16 @@ namespace SignalRTicTacToe.Web
 {
     public class TicTacToeHub : Hub, IDisconnect
     {
+        private readonly TicTacToeServer _server;
+
+        public TicTacToeHub()
+        {
+            _server = TicTacToeServer.Instance;
+        }
+
         public void Connect()
         {
+            _server.Connect(Context.ClientId);
         }
 
         public void Disconnect()
@@ -15,6 +23,7 @@ namespace SignalRTicTacToe.Web
 
         public void PlaceMarkOn(int row, int col)
         {
+            _server.PlaceMark(Context.ClientId, row, col);
         }
     }
 }

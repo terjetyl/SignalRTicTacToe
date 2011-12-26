@@ -69,9 +69,13 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="ITicTacToe.cs" />
+    <Compile Include="ITicTacToeClientUpdater.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TicTacToe.cs" />
     <Compile Include="TicTacToeHub.cs" />
+    <Compile Include="TicTacToeServer.cs" />
+    <Compile Include="TicTacToeSignalRClientUpdater.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\TicTacToe.css" />

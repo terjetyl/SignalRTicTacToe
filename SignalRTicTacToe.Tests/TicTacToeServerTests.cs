@@ -68,6 +68,15 @@ namespace SignalRTicTacToe.Tests
             }
         }
 
+        private void VerifyThatSpecificMessageBroadcastedWhenGameCompleted(string message, GameState state)
+        {
+            game.Setup(g => g.Status).Returns(state);
+
+            game.Raise(g => g.GameCompleted += null, game.Object);
+
+            clientUpdater.Verify(x => x.BroadcastMessage(message), Times.Once());
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -98,6 +107,15 @@ namespace SignalRTicTacToe.Tests
 
             clientUpdater.Verify(x => x.SendMessage(clients[2], "You are a spectator."), Times.Once());
             clientUpdater.Verify(x => x.SendMessage(clients[3], "You are a spectator."), Times.Once());
+        }
+
+        [Test]
+        public void WhenSpectatorArrives_UpdateSpectatorCount()
+        {
+            ConnectMany(2);
+
+            clientUpdater.Verify(x => x.UpdateSpectators(1), Times.Once());
+            clientUpdater.Verify(x => x.UpdateSpectators(2), Times.Once());
         }
 
         [Test]
@@ -135,74 +153,28 @@ namespace SignalRTicTacToe.Tests
         }
 
         [Test]
+        public void WhenGameCompleted_AndXWins_BroadcastXWinsToAll()
+        {
+            VerifyThatSpecificMessageBroadcastedWhenGameCompleted("X Wins!", GameState.XWins);
+        }
+
+        [Test]
+        public void WhenGameComplete_AndOWins_BroadcastOWinsToAll()
+        {
+            VerifyThatSpecificMessageBroadcastedWhenGameCompleted("O Wins!", GameState.OWins);
+        }
+
+        [Test]
+        public void WhenGameComplete_AndDraw_BroadcastDrawToAll()
+        {
+            VerifyThatSpecificMessageBroadcastedWhenGameCompleted("Game is a draw.", GameState.Draw);
+        }
+
+        [Test]
         [Ignore]
-        public void WhenGameCompleted_DoSomething()
+        public void WhenGameComplete_ResetAfterFiveSeconds()
         {
-            // TODO: ???
+            // I don't know how to test this.
         }
-    }
-
-    public class TicTacToeServer
-    {
-        private readonly ITicTacToeClientUpdater _clientUpdater;
-
-        private string _playerX;
-        private string _playerO;
-
-        private readonly ITicTacToe _ticTacToeGame;
-
-        public TicTacToeServer(ITicTacToe ticTacToeGame, ITicTacToeClientUpdater clientUpdater)
-        {
-            _ticTacToeGame = ticTacToeGame;
-            _clientUpdater = clientUpdater;
-        }
-
-        private bool IsPlayerXUnassigned
-        {
-            get { return _playerX == null; }
-        }
-
-        private bool IsPlayerOUnassigned
-        {
-            get { return _playerO == null; }
-        }
-
-        public void Connect(string clientId)
-        {
-            if (IsPlayerXUnassigned)
-            {
-                _playerX = clientId;
-                _clientUpdater.SendMessage(clientId, "You are X's.");
-            }
-            else if (IsPlayerOUnassigned)
-            {
-                _playerO = clientId;
-                _clientUpdater.SendMessage(clientId, "You are O's.");
-            }
-            else
-            {
-                _clientUpdater.SendMessage(clientId, "You are a spectator.");
-            }
-        }
-
-        public void PlaceMark(string clientId, int row, int col)
-        {
-            if (clientId == _playerX)
-            {
-                _ticTacToeGame.PlaceX(row, col);
-                _clientUpdater.UpdateSquare(row, col, "X");
-            }
-            else if (clientId == _playerO)
-            {
-                _ticTacToeGame.PlaceO(row, col);
-                _clientUpdater.UpdateSquare(row, col, "O");
-            }
-        }
-    }
-
-    public interface ITicTacToeClientUpdater
-    {
-        void SendMessage(string clientId, string message);
-        void UpdateSquare(int row, int col, string mark);
     }
 }
