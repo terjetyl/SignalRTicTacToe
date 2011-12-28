@@ -6,6 +6,8 @@ namespace SignalRTicTacToe.Web.Code
 {
     public class TicTacToeServer
     {
+        private const int ResetWaitTimeInSeconds = 5;
+
         private static readonly Lazy<TicTacToeServer> _instance = new Lazy<TicTacToeServer>(() => new TicTacToeServer());
 
         public static TicTacToeServer Instance
@@ -70,10 +72,14 @@ namespace SignalRTicTacToe.Web.Code
                     _clientUpdater.BroadcastMessage("Game is a draw.");
                     break;
             }
+            ResetGameAfterDelay();
+        }
 
+        private void ResetGameAfterDelay()
+        {
             Task.Factory.StartNew(() =>
                 {
-                    Thread.Sleep(5 * 1000);
+                    Thread.Sleep(ResetWaitTimeInSeconds*1000);
                     _ticTacToeGame.Reset();
                     _clientUpdater.ResetGame();
                 });

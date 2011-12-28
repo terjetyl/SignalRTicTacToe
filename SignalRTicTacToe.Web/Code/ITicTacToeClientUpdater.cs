@@ -1,5 +1,8 @@
 namespace SignalRTicTacToe.Web.Code
 {
+    /// <summary>
+    /// Facility for sending updates to the clients.
+    /// </summary>
     public interface ITicTacToeClientUpdater
     {
         void BroadcastMessage(string message);

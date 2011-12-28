@@ -1,4 +1,5 @@
 using Moq;
+using Moq.Language.Flow;
 using NUnit.Framework;
 using SignalRTicTacToe.Web.Code;
 
@@ -37,7 +38,7 @@ namespace SignalRTicTacToe.Tests
         private void XIsPlacedOnRow1Column1()
         {
             clientManager.Setup(_ => _.GetClientRole(Client1)).Returns(ClientRole.PlayerX);
-            NextTurnIsFor(PlayerType.X);
+            game.NextTurnFor(PlayerType.X);
 
             server.PlaceMark(Client1, 1, 1);
         }
@@ -45,14 +46,9 @@ namespace SignalRTicTacToe.Tests
         private void OIsPlacedOnRow0Column0()
         {
             clientManager.Setup(_ => _.GetClientRole(Client2)).Returns(ClientRole.PlayerO);
-            NextTurnIsFor(PlayerType.O);
+            game.NextTurnFor(PlayerType.O);
 
             server.PlaceMark(Client2, 0, 0);
-        }
-
-        private void NextTurnIsFor(PlayerType player)
-        {
-            game.SetupGet(x => x.CurrentTurn).Returns(player);
         }
 
         private void VerifyThatSpecificMessageBroadcastedWhenGameCompleted(string message, GameState state)
@@ -168,6 +164,14 @@ namespace SignalRTicTacToe.Tests
         public void WhenGameComplete_ResetAfterFiveSeconds()
         {
             // I don't know how to test this.
+        }
+    }
+
+    internal static class TicTacToeMockTestExtensions
+    {
+        public static IReturnsResult<ITicTacToe> NextTurnFor(this Mock<ITicTacToe> game, PlayerType player)
+        {
+            return game.SetupGet(x => x.CurrentTurn).Returns(player);
         }
     }
 }

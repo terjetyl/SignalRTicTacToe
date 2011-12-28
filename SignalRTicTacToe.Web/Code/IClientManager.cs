@@ -8,6 +8,9 @@ namespace SignalRTicTacToe.Web.Code
         Spectator
     }
 
+    /// <summary>
+    /// Determines and keeps track of tic-tac-toe client roles (Player X, O, or Spectator)
+    /// </summary>
     public interface IClientManager
     {
         event ClientRoleAssignedDelegate PlayerXAssigned;
