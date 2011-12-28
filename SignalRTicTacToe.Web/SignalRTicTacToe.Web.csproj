@@ -66,6 +66,9 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Code\ClientManager.cs" />
+    <Compile Include="Code\ClientRoleAssignedDelegate.cs" />
+    <Compile Include="Code\IClientManager.cs" />
     <Compile Include="Code\ITicTacToe.cs" />
     <Compile Include="Code\ITicTacToeClientUpdater.cs" />
     <Compile Include="Code\TicTacToe.cs" />

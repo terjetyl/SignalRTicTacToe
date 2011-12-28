@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Moq;
 using NUnit.Framework;
 using SignalRTicTacToe.Web.Code;
@@ -26,44 +23,31 @@ namespace SignalRTicTacToe.Tests
     [TestFixture]
     public class TicTacToeServerTests
     {
-        private List<string> clients;
+        private const string Client1 = "Client1";
+        private const string Client2 = "Client2";
+        private const string Client3 = "Spectator1";
+        private const string Client4 = "Spectator2";
 
         protected Mock<ITicTacToeClientUpdater> clientUpdater;
         protected Mock<ITicTacToe> game;
+        protected Mock<IClientManager> clientManager;
 
         protected TicTacToeServer server;
 
-        private string PlayerX
+        private void XIsPlacedOnRow1Column1()
         {
-            get { return clients[0]; }
+            clientManager.Setup(_ => _.GetClientRole(Client1)).Returns(ClientRole.PlayerX);
+            NextTurnIsFor(PlayerType.X);
+
+            server.PlaceMark(Client1, 1, 1);
         }
 
-        private string PlayerO
+        private void OIsPlacedOnRow0Column0()
         {
-            get { return clients[1]; }
-        }
+            clientManager.Setup(_ => _.GetClientRole(Client2)).Returns(ClientRole.PlayerO);
+            NextTurnIsFor(PlayerType.O);
 
-        private void ConnectPlayerXAndO()
-        {
-            if (clients.Any())
-                throw new InvalidOperationException("Player X and O are already connected.");
-            ConnectMany(2);
-        }
-
-        private void Connect()
-        {
-            string clientId = (clients.Count + 1).ToString();
-            clients.Add(clientId);
-
-            server.Connect(clientId);
-        }
-
-        private void ConnectMany(int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                Connect();
-            }
+            server.PlaceMark(Client2, 0, 0);
         }
 
         private void NextTurnIsFor(PlayerType player)
@@ -83,83 +67,82 @@ namespace SignalRTicTacToe.Tests
         [SetUp]
         public void SetUp()
         {
-            clients = new List<string>();
-
+            clientManager = new Mock<IClientManager>();
             clientUpdater = new Mock<ITicTacToeClientUpdater>();
             game = new Mock<ITicTacToe>();
-            server = new TicTacToeServer(game.Object, clientUpdater.Object);
 
-            ConnectPlayerXAndO();
+            server = new TicTacToeServer(game.Object, clientManager.Object, clientUpdater.Object);
         }
 
         [Test]
-        public void WhenFirstClientArrives_AssignToX()
+        public void WhenPlayerConnects_AssignRole()
         {
-            clientUpdater.Verify(x => x.SendMessage(clients[0], "You are X's."), Times.Once());
+            server.Connect("Client1");
+
+            clientManager.Verify(_ => _.AssignRole("Client1"), Times.Once());
         }
 
         [Test]
-        public void WhenSecondClientArrives_AssignToO()
+        public void WhenPlayerXAssigned_SendMessageToX()
         {
-            clientUpdater.Verify(x => x.SendMessage(clients[1], "You are O's."), Times.Once());
+            clientManager.Raise(_ => _.PlayerXAssigned += null, clientManager.Object, Client1);
+            clientUpdater.Verify(x => x.SendMessage(Client1, "You are X's."), Times.Once());
         }
 
         [Test]
-        public void WhenAnyClientAfterTheSecondArrives_DesignateAsSpectator()
+        public void WhenPlayerOAssigned_SendMessageToO()
         {
-            ConnectMany(2);
+            clientManager.Raise(_ => _.PlayerOAssigned += null, clientManager.Object, Client2);
+            clientUpdater.Verify(x => x.SendMessage(Client2, "You are O's."), Times.Once());
+        }
 
-            clientUpdater.Verify(x => x.SendMessage(clients[2], "You are a spectator."), Times.Once());
-            clientUpdater.Verify(x => x.SendMessage(clients[3], "You are a spectator."), Times.Once());
+        [Test]
+        public void WhenSpectatorAssigned_SendMessageToSpectator()
+        {
+            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client3);
+            clientUpdater.Verify(x => x.SendMessage(Client3, "You are a spectator."), Times.Once());
         }
 
         [Test]
         public void WhenSpectatorArrives_UpdateSpectatorCount()
         {
-            ConnectMany(2);
+            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client3);
+            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client4);
 
             clientUpdater.Verify(x => x.UpdateSpectators(1), Times.Once());
             clientUpdater.Verify(x => x.UpdateSpectators(2), Times.Once());
         }
 
         [Test]
-        public void WhenPlayerXPlacesMark_OnTheirTurn_PlaceX()
+        public void WhenPlayerXPlacesMark_AndIsXsTurn_PlaceX()
         {
-            NextTurnIsFor(PlayerType.X);
-            
-            server.PlaceMark(PlayerX, 1, 1);
+            XIsPlacedOnRow1Column1();
 
-            game.Verify(x => x.PlaceX(1, 1));
+            game.Verify(x => x.PlaceX(1, 1), Times.Once());
         }
 
         [Test]
-        public void WhenPlayerOPlacesMark_OnTheirTurn_PlaceO()
+        public void WhenPlayerXPlacesMark_AndIsXsTurn_UpdateSquareForX()
         {
-            NextTurnIsFor(PlayerType.O);
+            XIsPlacedOnRow1Column1();
 
-            server.PlaceMark(PlayerO, 0, 0);
-
-            game.Verify(x => x.PlaceO(0, 0), Times.Once());
+            clientUpdater.Verify(_ => _.UpdateSquare(1, 1, "X"));
         }
 
         [Test]
-        public void WhenPlayerXPlacesMark_OnTheirTurn_UpdateClientSquares()
+        public void WhenPlayerOPlacesMark_AndIsOsTurn_PlaceO()
         {
-            NextTurnIsFor(PlayerType.X);
+            OIsPlacedOnRow0Column0();
 
-            server.PlaceMark(PlayerX, 1, 1);
-
-            clientUpdater.Verify(x => x.UpdateSquare(1, 1, "X"), Times.Once());
+            game.Verify(_ => _.PlaceO(0, 0), Times.Once());
         }
 
         [Test]
-        public void WhenPlayerOPlacesMark_OnTheirTurn_UpdateClientSquares()
+        public void WhenPlayerOPlacesMark_AndIsOsTurn_UpdateSquareForO()
         {
-            NextTurnIsFor(PlayerType.O);
+            OIsPlacedOnRow0Column0();
 
-            server.PlaceMark(PlayerO, 0, 0);
-
-            clientUpdater.Verify(x => x.UpdateSquare(0, 0, "O"), Times.Once());
+            clientUpdater.Verify(_ => _.UpdateSquare(0, 0, "O"), Times.Once());
         }
 
         [Test]

@@ -13,33 +13,47 @@ namespace SignalRTicTacToe.Web.Code
             get { return _instance.Value;  }
         }
 
+        private readonly IClientManager _clientManager;
         private readonly ITicTacToeClientUpdater _clientUpdater;
         private readonly ITicTacToe _ticTacToeGame;
-        private string _playerX;
-        private string _playerO;
+
         private int _spectatorCount = 0;
 
         public TicTacToeServer()
-            : this(new TicTacToe(), new TicTacToeSignalRClientUpdater())
+            : this(new TicTacToe(), new ClientManager(), new TicTacToeSignalRClientUpdater())
         {
         }
 
-        public TicTacToeServer(ITicTacToe ticTacToeGame, ITicTacToeClientUpdater clientUpdater)
+        public TicTacToeServer(ITicTacToe ticTacToeGame, IClientManager clientManager, ITicTacToeClientUpdater clientUpdater)
         {
             _ticTacToeGame = ticTacToeGame;
             _ticTacToeGame.GameCompleted += OnGameCompleted;
 
+            _clientManager = clientManager;
+            _clientManager.PlayerXAssigned += OnPlayerXAssigned;
+            _clientManager.PlayerOAssigned += OnPlayerOAssigned;
+            _clientManager.SpectatorAssigned += OnSpectatorAssigned;
+
             _clientUpdater = clientUpdater;
         }
 
-        private bool IsPlayerXUnassigned
+        public void Connect(string clientId)
         {
-            get { return _playerX == null; }
+            _clientManager.AssignRole(clientId);
         }
 
-        private bool IsPlayerOUnassigned
+        public void PlaceMark(string clientId, int row, int col)
         {
-            get { return _playerO == null; }
+            if (IsPlayerX(clientId) && IsPlayerXTurn())
+            {
+                _ticTacToeGame.PlaceX(row, col);
+                _clientUpdater.UpdateSquare(row, col, "X");
+            }
+            else if (IsPlayerO(clientId) && IsPlayerOTurn())
+            {
+                _ticTacToeGame.PlaceO(row, col);
+                _clientUpdater.UpdateSquare(row, col, "O");
+            }
         }
 
         private void OnGameCompleted(object sender)
@@ -65,59 +79,41 @@ namespace SignalRTicTacToe.Web.Code
                 });
         }
 
-        public void Connect(string clientId)
+        private void OnPlayerXAssigned(object sender, string clientId)
         {
-            if (IsPlayerXUnassigned)
-            {
-                _playerX = clientId;
-                _clientUpdater.SendMessage(clientId, "You are X's.");
-            }
-            else if (IsPlayerOUnassigned)
-            {
-                _playerO = clientId;
-                _clientUpdater.SendMessage(clientId, "You are O's.");
-            }
-            else
-            {
-                _clientUpdater.SendMessage(clientId, "You are a spectator.");
-
-                _spectatorCount++;
-                _clientUpdater.UpdateSpectators(_spectatorCount);
-            }
+            _clientUpdater.SendMessage(clientId, "You are X's.");
         }
 
-        public void PlaceMark(string clientId, int row, int col)
+        private void OnPlayerOAssigned(object sender, string clientId)
         {
-            if (IsPlayerX(clientId) && IsPlayerXTurn)
-            {
-                _ticTacToeGame.PlaceX(row, col);
-                _clientUpdater.UpdateSquare(row, col, "X");
-            }
-            else if (IsPlayerO(clientId) && IsPlayerOTurn)
-            {
-                _ticTacToeGame.PlaceO(row, col);
-                _clientUpdater.UpdateSquare(row, col, "O");
-            }
+            _clientUpdater.SendMessage(clientId, "You are O's.");
+        }
+
+        private void OnSpectatorAssigned(object sender, string clientId)
+        {
+            _clientUpdater.SendMessage(clientId, "You are a spectator.");
+            _spectatorCount++;
+            _clientUpdater.UpdateSpectators(_spectatorCount);
         }
 
         private bool IsPlayerX(string clientId)
         {
-            return clientId == _playerX;
-        }
-
-        private bool IsPlayerXTurn
-        {
-            get { return _ticTacToeGame.CurrentTurn == PlayerType.X; }
+            return _clientManager.GetClientRole(clientId) == ClientRole.PlayerX;
         }
 
         private bool IsPlayerO(string clientId)
         {
-            return clientId == _playerO;
+            return _clientManager.GetClientRole(clientId) == ClientRole.PlayerO;
         }
 
-        private bool IsPlayerOTurn
+        private bool IsPlayerXTurn()
         {
-            get { return _ticTacToeGame.CurrentTurn == PlayerType.O; }
+            return _ticTacToeGame.CurrentTurn == PlayerType.X;
+        }
+
+        private bool IsPlayerOTurn()
+        {
+            return _ticTacToeGame.CurrentTurn == PlayerType.O;
         }
     }
 }
