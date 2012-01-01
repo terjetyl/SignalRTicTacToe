@@ -79,5 +79,75 @@ namespace SignalRTicTacToe.Tests
             
             Assert.AreEqual(Client3, spectatorId);
         }
+
+        [Test]
+        public void TestSpectatorCount()
+        {
+            AssignRoles(Client1, Client2, Client3);
+
+            Assert.AreEqual(1, clientManager.SpectatorCount);
+        }
+
+        [Test]
+        public void WhenPlayerXIsUnassigned_ClientShouldNoLongerHaveARole()
+        {
+            AssignRoles(Client1);
+
+            clientManager.Unassign(Client1);
+
+            Assert.AreEqual(ClientRole.None, clientManager.GetClientRole(Client1));
+        }
+
+        [Test]
+        public void WhenPlayerXIsUnassigned_TheFirstSpectatorShouldTakeTheirPlace()
+        {
+            AssignRoles(Client1, Client2, Client3);
+
+            clientManager.Unassign(Client1);
+
+            Assert.AreEqual(ClientRole.PlayerX, clientManager.GetClientRole(Client3));
+        }
+
+        [Test]
+        public void WhenPlayerOIsUnassigned_TheFirstSpectatorShouldTakeTheirPlace()
+        {
+            AssignRoles(Client1, Client2, Client3);
+
+            clientManager.Unassign(Client2);
+
+            Assert.AreEqual(ClientRole.PlayerO, clientManager.GetClientRole(Client3));
+        }
+
+        [Test]
+        public void WhenPlayerOIsUnassigned_ClientShouldNoLongerHaveARole()
+        {
+            AssignRoles(Client1, Client2);
+
+            clientManager.Unassign(Client2);
+
+            Assert.AreEqual(ClientRole.None, clientManager.GetClientRole(Client2));
+        }
+
+        [Test]
+        public void WhenSpectatorIsUnassigned_ClientShouldNoLongerHaveARole()
+        {
+            AssignRoles(Client1, Client2, Client3);
+
+            clientManager.Unassign(Client3);
+
+            Assert.AreEqual(ClientRole.None, clientManager.GetClientRole(Client3));
+        }
+
+        [Test]
+        public void WhenSpectatorIsUnassigned_SpectatorCountShouldBeDecrementedByOne()
+        {
+            AssignRoles(Client1, Client2, Client3);
+
+            Assert.AreEqual(1, clientManager.SpectatorCount);
+
+            clientManager.Unassign(Client3);
+
+            Assert.AreEqual(0, clientManager.SpectatorCount);
+        }
     }
 }

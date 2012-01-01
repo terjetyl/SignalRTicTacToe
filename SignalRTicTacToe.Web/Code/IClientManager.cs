@@ -2,7 +2,7 @@ namespace SignalRTicTacToe.Web.Code
 {
     public enum ClientRole
     {
-        Unknown,
+        None,
         PlayerX,
         PlayerO,
         Spectator
@@ -13,11 +13,14 @@ namespace SignalRTicTacToe.Web.Code
     /// </summary>
     public interface IClientManager
     {
+        int SpectatorCount { get; }
+
         event ClientRoleAssignedDelegate PlayerXAssigned;
         event ClientRoleAssignedDelegate PlayerOAssigned;
         event ClientRoleAssignedDelegate SpectatorAssigned;
-        
+
         void AssignRole(string clientId);
+        void Unassign(string clientId);
         ClientRole GetClientRole(string clientId);
     }
 }

@@ -1,5 +1,6 @@
 using Moq;
 using Moq.Language.Flow;
+using Moq.Sequences;
 using NUnit.Framework;
 using SignalRTicTacToe.Web.Code;
 
@@ -102,11 +103,12 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenSpectatorArrives_UpdateSpectatorCount()
         {
-            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client3);
-            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client4);
+            const int spectators = 1;
+            clientManager.SetupGet(_ => _.SpectatorCount).Returns(spectators);
 
-            clientUpdater.Verify(x => x.UpdateSpectators(1), Times.Once());
-            clientUpdater.Verify(x => x.UpdateSpectators(2), Times.Once());
+            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client3);
+
+            clientUpdater.Verify(x => x.UpdateSpectators(spectators), Times.Once());
         }
 
         [Test]
@@ -164,6 +166,64 @@ namespace SignalRTicTacToe.Tests
         public void WhenGameComplete_ResetAfterFiveSeconds()
         {
             // I don't know how to test this.
+        }
+
+        [Test]
+        public void WhenClientDisconnects_Unassign()
+        {
+            server.Disconnect(Client1);
+
+            clientManager.Verify(_ => _.Unassign(Client1), Times.Once());
+        }
+
+        [Test]
+        public void WhenXDisconnects_ResetGame()
+        {
+            clientManager.Setup(_ => _.GetClientRole(Client1)).Returns(ClientRole.PlayerX);
+
+            server.Disconnect(Client1);
+
+            game.Verify(_ => _.Reset());
+            clientUpdater.Verify(_ => _.ResetGame());
+        }
+
+        [Test]
+        public void WhenODisconnects_ResetGame()
+        {
+            clientManager.Setup(_ => _.GetClientRole(Client2)).Returns(ClientRole.PlayerO);
+
+            server.Disconnect(Client2);
+
+            game.Verify(_ => _.Reset());
+            clientUpdater.Verify(_ => _.ResetGame());
+        }
+
+        [Test]
+        public void WhenSpectatorDisconnects_UpdateSpectators()
+        {
+            const int spectators = 0;
+            clientManager.SetupGet(_ => _.SpectatorCount).Returns(spectators);
+            clientManager.Setup(_ => _.GetClientRole(Client3)).Returns(ClientRole.Spectator);
+
+            server.Disconnect(Client3);
+
+            clientUpdater.Verify(_ => _.UpdateSpectators(spectators));
+        }
+
+        [Test]
+        public void WhenSpectatorDisconnects_ClientMustBeUnassignedBeforeUpdateSpectators()
+        {
+            const int spectators = 0;
+            clientManager.SetupGet(_ => _.SpectatorCount).Returns(spectators);
+            clientManager.Setup(_ => _.GetClientRole(Client3)).Returns(ClientRole.Spectator);
+
+            using (Sequence.Create())
+            {
+                clientManager.Setup(_ => _.Unassign(Client3)).InSequence();
+                clientUpdater.Setup(_ => _.UpdateSpectators(spectators)).InSequence();
+
+                server.Disconnect(Client3);
+            }
         }
     }
 

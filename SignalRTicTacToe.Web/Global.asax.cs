@@ -8,7 +8,7 @@ namespace SignalRTicTacToe.Web
         protected void Application_Start(object sender, EventArgs e)
         {
             // Lowered the default timeout to detect disconnects faster.
-            SignalR.Signaler.Instance.DefaultTimeout = TimeSpan.FromSeconds(10);
+            SignalR.Signaler.Instance.DefaultTimeout = TimeSpan.FromSeconds(5);
         }
 
         protected void Session_Start(object sender, EventArgs e)

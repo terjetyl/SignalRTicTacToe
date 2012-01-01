@@ -19,8 +19,6 @@ namespace SignalRTicTacToe.Web.Code
         private readonly ITicTacToeClientUpdater _clientUpdater;
         private readonly ITicTacToe _ticTacToeGame;
 
-        private int _spectatorCount = 0;
-
         public TicTacToeServer()
             : this(new TicTacToe(), new ClientManager(), new TicTacToeSignalRClientUpdater())
         {
@@ -98,8 +96,7 @@ namespace SignalRTicTacToe.Web.Code
         private void OnSpectatorAssigned(object sender, string clientId)
         {
             _clientUpdater.SendMessage(clientId, "You are a spectator.");
-            _spectatorCount++;
-            _clientUpdater.UpdateSpectators(_spectatorCount);
+            _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
         }
 
         private bool IsPlayerX(string clientId)
@@ -120,6 +117,25 @@ namespace SignalRTicTacToe.Web.Code
         private bool IsPlayerOTurn()
         {
             return _ticTacToeGame.CurrentTurn == PlayerType.O;
+        }
+
+        public void Disconnect(string clientId)
+        {
+            ClientRole clientRole = _clientManager.GetClientRole(clientId);
+
+            _clientManager.Unassign(clientId);
+
+            switch (clientRole)
+            {
+                case ClientRole.PlayerO:
+                case ClientRole.PlayerX:
+                    _ticTacToeGame.Reset();
+                    _clientUpdater.ResetGame();
+                    break;
+                case ClientRole.Spectator:
+                    _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
+                    break;
+            }
         }
     }
 }

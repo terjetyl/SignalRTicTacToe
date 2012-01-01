@@ -1,3 +1,5 @@
 A simple tic-tac-toe demo implemented using SignalR.
 
+Used IISExpress for local development.  I seemed to have issued with disconnects using WebDev.
+
 See a demo at http://zooplet.com/tictactoe

@@ -18,6 +18,7 @@ namespace SignalRTicTacToe.Web.Code
 
         public void Disconnect()
         {
+            _server.Disconnect(Context.ClientId);
         }
 
         public void PlaceMarkOn(int row, int col)

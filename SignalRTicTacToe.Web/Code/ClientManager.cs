@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SignalRTicTacToe.Web.Code
 {
@@ -14,6 +16,11 @@ namespace SignalRTicTacToe.Web.Code
             PlayerXAssigned += (sender, id) => { };
             PlayerOAssigned += (sender, id) => { };
             SpectatorAssigned += (sender, id) => { };
+        }
+
+        public int SpectatorCount
+        {
+            get { return _spectators.Count; }
         }
 
         public event ClientRoleAssignedDelegate PlayerXAssigned;
@@ -39,6 +46,38 @@ namespace SignalRTicTacToe.Web.Code
             }
         }
 
+        public void Unassign(string clientId)
+        {
+            if (_playerX == clientId)
+            {
+                _playerX = null;
+
+                var firstSpectator = _spectators.FirstOrDefault();
+                if (firstSpectator != null)
+                {
+                    _spectators.Remove(firstSpectator);
+                    _playerX = firstSpectator;
+                    PlayerXAssigned.Invoke(this, _playerX);
+                }
+            }
+            else if (_playerO == clientId)
+            {
+                _playerO = null;
+
+                var firstSpectator = _spectators.FirstOrDefault();
+                if (firstSpectator != null)
+                {
+                    _spectators.Remove(firstSpectator);
+                    _playerO = firstSpectator;
+                    PlayerOAssigned.Invoke(this, _playerO);
+                }
+            }
+            else if (_spectators.Contains(clientId))
+            {
+                _spectators.Remove(clientId);
+            }
+        }
+
         public ClientRole GetClientRole(string clientId)
         {
             if (clientId == _playerX)
@@ -53,7 +92,7 @@ namespace SignalRTicTacToe.Web.Code
             {
                 return ClientRole.Spectator;
             }
-            return ClientRole.Unknown;
+            return ClientRole.None;
         }
     }
 }
