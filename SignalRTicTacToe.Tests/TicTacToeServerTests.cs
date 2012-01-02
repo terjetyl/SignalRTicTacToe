@@ -7,15 +7,8 @@ using SignalRTicTacToe.Web.Code;
 namespace SignalRTicTacToe.Tests
 {
     // Connect
-        // If X is unassigned, assign as x
-        // If O is unassigned, assign as o
         // Start game when X and O have been assigned
         // Notify users when game starts
-    // Disconnect
-        // When X disconnects, assign next spectator as X
-        // When O disconnects, assign next spectator as O
-        // When X disconnects, reset game
-        // When O, disconnect, reset game
     // PlaceMark
         // Do not allow if game not started
 
@@ -59,6 +52,16 @@ namespace SignalRTicTacToe.Tests
             game.Raise(g => g.GameCompleted += null, game.Object);
 
             clientUpdater.Verify(x => x.BroadcastMessage(message), Times.Once());
+        }
+
+        private void Client2IsPlayerO()
+        {
+            clientManager.Setup(_ => _.GetClientRole(Client2)).Returns(ClientRole.PlayerO);
+        }
+
+        private void Client1IsPlayerX()
+        {
+            clientManager.Setup(_ => _.GetClientRole(Client1)).Returns(ClientRole.PlayerX);
         }
 
         [SetUp]
@@ -179,7 +182,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenXDisconnects_ResetGame()
         {
-            clientManager.Setup(_ => _.GetClientRole(Client1)).Returns(ClientRole.PlayerX);
+            Client1IsPlayerX();
 
             server.Disconnect(Client1);
 
@@ -190,7 +193,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenODisconnects_ResetGame()
         {
-            clientManager.Setup(_ => _.GetClientRole(Client2)).Returns(ClientRole.PlayerO);
+            Client2IsPlayerO();
 
             server.Disconnect(Client2);
 
@@ -224,6 +227,19 @@ namespace SignalRTicTacToe.Tests
 
                 server.Disconnect(Client3);
             }
+        }
+
+        [Test]
+        public void WhenGameIsCompleted_AndPlayerOWins_PlayerXShouldBeMadeASpectator()
+        {
+            Client1IsPlayerX();
+            Client2IsPlayerO();
+
+            game.SetupGet(_ => _.Status).Returns(GameState.OWins);
+
+            game.Raise(_ => _.GameCompleted += null, game);
+
+            clientManager.Verify(_ => _.RotateRoleOutWithSpectator(ClientRole.PlayerX));
         }
     }
 

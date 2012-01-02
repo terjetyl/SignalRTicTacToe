@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -46,35 +45,45 @@ namespace SignalRTicTacToe.Web.Code
             }
         }
 
+        public void RotateRoleOutWithSpectator(ClientRole role)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public void Unassign(string clientId)
         {
             if (_playerX == clientId)
             {
                 _playerX = null;
-
-                var firstSpectator = _spectators.FirstOrDefault();
-                if (firstSpectator != null)
-                {
-                    _spectators.Remove(firstSpectator);
-                    _playerX = firstSpectator;
-                    PlayerXAssigned.Invoke(this, _playerX);
-                }
+                AssignFirstSpectatorToRole(ClientRole.PlayerX);
             }
             else if (_playerO == clientId)
             {
                 _playerO = null;
-
-                var firstSpectator = _spectators.FirstOrDefault();
-                if (firstSpectator != null)
-                {
-                    _spectators.Remove(firstSpectator);
-                    _playerO = firstSpectator;
-                    PlayerOAssigned.Invoke(this, _playerO);
-                }
+                AssignFirstSpectatorToRole(ClientRole.PlayerO);
             }
             else if (_spectators.Contains(clientId))
             {
                 _spectators.Remove(clientId);
+            }
+        }
+
+        private void AssignFirstSpectatorToRole(ClientRole roleToReplace)
+        {
+            var firstSpectator = _spectators.FirstOrDefault();
+            if (firstSpectator == null) return;
+            
+            _spectators.Remove(firstSpectator);
+
+            if (roleToReplace == ClientRole.PlayerX)
+            {
+                _playerX = firstSpectator;
+                PlayerXAssigned.Invoke(this, _playerX);
+            }
+            else if (roleToReplace == ClientRole.PlayerO)
+            {
+                _playerO = firstSpectator;
+                PlayerOAssigned.Invoke(this, _playerO);
             }
         }
 

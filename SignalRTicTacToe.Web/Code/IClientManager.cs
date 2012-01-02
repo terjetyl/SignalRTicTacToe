@@ -20,7 +20,8 @@ namespace SignalRTicTacToe.Web.Code
         event ClientRoleAssignedDelegate SpectatorAssigned;
 
         void AssignRole(string clientId);
-        void Unassign(string clientId);
         ClientRole GetClientRole(string clientId);
+        void RotateRoleOutWithSpectator(ClientRole role);
+        void Unassign(string clientId);
     }
 }

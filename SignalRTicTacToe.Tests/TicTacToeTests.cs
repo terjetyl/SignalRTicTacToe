@@ -15,7 +15,7 @@ namespace SignalRTicTacToe.Tests
             {
                 for (int col = 0; col < 3; col++)
                 {
-                    Assert.AreEqual(PlayerType.None, ticTacToe.GetSquareState(row, col));
+                    Assert.AreEqual(PlayerType.None, ticTacToe.GetSquareState(row, col), "Square ({0}, {1}) was not empty.", row, col);
                 }
             }
         }
@@ -77,7 +77,7 @@ namespace SignalRTicTacToe.Tests
 
             playGame.Invoke();
 
-            Assert.Fail();
+            Assert.Fail("The GameCompleted event was not invoked.");
         }
 
         private void PlayCompleteGameAndReset()

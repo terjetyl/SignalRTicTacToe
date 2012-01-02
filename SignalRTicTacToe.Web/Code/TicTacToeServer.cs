@@ -65,6 +65,7 @@ namespace SignalRTicTacToe.Web.Code
                     break;
                 case GameState.OWins:
                     _clientUpdater.BroadcastMessage("O Wins!");
+                    _clientManager.RotateRoleOutWithSpectator(ClientRole.PlayerX);
                     break;
                 case GameState.Draw:
                     _clientUpdater.BroadcastMessage("Game is a draw.");
