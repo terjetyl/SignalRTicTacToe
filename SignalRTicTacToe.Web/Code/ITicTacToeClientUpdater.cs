@@ -10,5 +10,6 @@ namespace SignalRTicTacToe.Web.Code
         void SendMessage(string clientId, string message);
         void UpdateSpectators(int count);
         void UpdateSquare(int row, int col, string mark);
+        void UpdateSquare(int row, int col, string mark, string clientId);
     }
 }

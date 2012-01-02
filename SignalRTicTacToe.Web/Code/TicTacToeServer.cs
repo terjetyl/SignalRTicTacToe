@@ -38,7 +38,23 @@ namespace SignalRTicTacToe.Web.Code
 
         public void Connect(string clientId)
         {
+            SendAllSquaresState(clientId);
             _clientManager.AssignToNextAvailableRole(clientId);
+        }
+
+        private void SendAllSquaresState(string clientId)
+        {
+            for (int r = 0; r < 3; r++)
+            {
+                for (int c = 0; c < 3; c++)
+                {
+                    var square = _ticTacToeGame.GetSquareState(r, c);
+                    if (square != PlayerType.None)
+                    {
+                        _clientUpdater.UpdateSquare(r, c, square == PlayerType.X ? "X" : "O", clientId);
+                    }
+                }
+            }
         }
 
         public void PlaceMark(string clientId, int row, int col)
@@ -87,6 +103,11 @@ namespace SignalRTicTacToe.Web.Code
                 });
         }
 
+        private void UpdateSpectatorCount()
+        {
+            _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
+        }
+
         private void ResetGame()
         {
             _ticTacToeGame.Reset();
@@ -106,7 +127,7 @@ namespace SignalRTicTacToe.Web.Code
                     _clientUpdater.BroadcastMessage("Player O is ready.");
                     break;
                 case ClientRole.Spectator:
-                    _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
+                    UpdateSpectatorCount();
                     break;
             } 
             _clientUpdater.SendMessage(assignment.ClientId, GetClientAssigmentMessage(assignment.Role));
@@ -160,7 +181,7 @@ namespace SignalRTicTacToe.Web.Code
 
             if (clientRole == ClientRole.Spectator)
             {
-                _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
+                UpdateSpectatorCount();
             }
         }
     }

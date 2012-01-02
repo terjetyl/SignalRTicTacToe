@@ -33,5 +33,10 @@ namespace SignalRTicTacToe.Web.Code
         {
             Clients.updateSquare(mark, row, col);
         }
+
+        public void UpdateSquare(int row, int col, string mark, string clientId)
+        {
+            Clients[clientId].updateSquare(mark, row, col);
+        }
     }
 }
