@@ -6,28 +6,20 @@ using SignalRTicTacToe.Web.Code;
 
 namespace SignalRTicTacToe.Tests
 {
-    // Connect
-        // Start game when X and O have been assigned
-        // Notify users when game starts
-    // PlaceMark
-        // Do not allow if game not started
-
-    // When game ends, winner swaps with other player
-    // When game ends, loser is replaced by spectator
-
     [TestFixture]
     public class TicTacToeServerTests
     {
         private const string Client1 = "Client1";
         private const string Client2 = "Client2";
         private const string Client3 = "Spectator1";
-        private const string Client4 = "Spectator2";
 
         protected Mock<ITicTacToeClientUpdater> clientUpdater;
         protected Mock<ITicTacToe> game;
         protected Mock<IClientManager> clientManager;
 
         protected TicTacToeServer server;
+
+        #region Helper Methods
 
         private void XIsPlacedOnRow1Column1()
         {
@@ -54,15 +46,23 @@ namespace SignalRTicTacToe.Tests
             clientUpdater.Verify(x => x.BroadcastMessage(message), Times.Once());
         }
 
+        private void Client1IsPlayerX()
+        {
+            clientManager.Setup(_ => _.GetClientRole(Client1)).Returns(ClientRole.PlayerX);
+        }
+
         private void Client2IsPlayerO()
         {
             clientManager.Setup(_ => _.GetClientRole(Client2)).Returns(ClientRole.PlayerO);
         }
 
-        private void Client1IsPlayerX()
+        private void VerifyGameIsReset()
         {
-            clientManager.Setup(_ => _.GetClientRole(Client1)).Returns(ClientRole.PlayerX);
+            game.Verify(_ => _.Reset());
+            clientUpdater.Verify(_ => _.ResetGame());
         }
+
+        #endregion
 
         [SetUp]
         public void SetUp()
@@ -75,41 +75,68 @@ namespace SignalRTicTacToe.Tests
         }
 
         [Test]
-        public void WhenPlayerConnects_AssignRole()
+        public void WhenPlayerConnects_AssignToNextAvailableRole()
         {
-            server.Connect("Client1");
-
-            clientManager.Verify(_ => _.AssignRole("Client1"), Times.Once());
+            server.Connect(Client1);
+            clientManager.Verify(_ => _.AssignToNextAvailableRole(Client1), Times.Once());
         }
 
         [Test]
-        public void WhenPlayerXAssigned_SendMessageToX()
+        public void WhenPlayerXAssigned_SendMessageConfirmingRoleAsX()
         {
-            clientManager.Raise(_ => _.PlayerXAssigned += null, clientManager.Object, Client1);
+            clientManager.RaiseClientRoleAssigned(Client1, ClientRole.PlayerX);
             clientUpdater.Verify(x => x.SendMessage(Client1, "You are X's."), Times.Once());
         }
 
         [Test]
-        public void WhenPlayerOAssigned_SendMessageToO()
+        public void WhenPlayerXAssigned_NotifyClients()
         {
-            clientManager.Raise(_ => _.PlayerOAssigned += null, clientManager.Object, Client2);
+            clientManager.RaiseClientRoleAssigned("Any Client", ClientRole.PlayerX);
+            clientUpdater.Verify(_ => _.BroadcastMessage("Player X is ready."));
+        }
+
+        [Test]
+        public void WhenPlayerXAssigned_ResetGame()
+        {
+            clientManager.RaiseClientRoleAssigned("Any Client", ClientRole.PlayerX);
+            VerifyGameIsReset();
+        }
+
+        [Test]
+        public void WhenPlayerOAssigned_SendMessageConfirmingRoleAsO()
+        {
+            clientManager.RaiseClientRoleAssigned(Client2, ClientRole.PlayerO);
             clientUpdater.Verify(x => x.SendMessage(Client2, "You are O's."), Times.Once());
         }
 
         [Test]
-        public void WhenSpectatorAssigned_SendMessageToSpectator()
+        public void WhenPlayerOAssigned_NotifyClients()
         {
-            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client3);
+            clientManager.RaiseClientRoleAssigned("Any Client", ClientRole.PlayerO);
+            clientUpdater.Verify(_ => _.BroadcastMessage("Player O is ready."));
+        }
+
+        [Test]
+        public void WhenPlayerOAssigned_ResetGame()
+        {
+            clientManager.RaiseClientRoleAssigned("Any Client", ClientRole.PlayerO);
+            VerifyGameIsReset();
+        }
+
+        [Test]
+        public void WhenSpectatorAssigned_SendMessageConfirmingRoleAsSpectator()
+        {
+            clientManager.RaiseClientRoleAssigned(Client3, ClientRole.Spectator);
             clientUpdater.Verify(x => x.SendMessage(Client3, "You are a spectator."), Times.Once());
         }
 
         [Test]
-        public void WhenSpectatorArrives_UpdateSpectatorCount()
+        public void WhenSpectatorIsAssigned_UpdateSpectatorCount()
         {
             const int spectators = 1;
             clientManager.SetupGet(_ => _.SpectatorCount).Returns(spectators);
 
-            clientManager.Raise(_ => _.SpectatorAssigned += null, clientManager.Object, Client3);
+            clientManager.RaiseClientRoleAssigned(Client3, ClientRole.Spectator);
 
             clientUpdater.Verify(x => x.UpdateSpectators(spectators), Times.Once());
         }
@@ -172,33 +199,31 @@ namespace SignalRTicTacToe.Tests
         }
 
         [Test]
-        public void WhenClientDisconnects_Unassign()
-        {
-            server.Disconnect(Client1);
-
-            clientManager.Verify(_ => _.Unassign(Client1), Times.Once());
-        }
-
-        [Test]
-        public void WhenXDisconnects_ResetGame()
+        public void WhenPlayerXDisconnects_NotifyOtherClients()
         {
             Client1IsPlayerX();
 
             server.Disconnect(Client1);
 
-            game.Verify(_ => _.Reset());
-            clientUpdater.Verify(_ => _.ResetGame());
+            clientUpdater.Verify(_ => _.BroadcastMessage("Player X has left."));
         }
 
         [Test]
-        public void WhenODisconnects_ResetGame()
+        public void WhenPlayerODisconnects_NotifyOtherClients()
         {
             Client2IsPlayerO();
 
             server.Disconnect(Client2);
 
-            game.Verify(_ => _.Reset());
-            clientUpdater.Verify(_ => _.ResetGame());
+            clientUpdater.Verify(_ => _.BroadcastMessage("Player O has left."));
+        }
+
+        [Test]
+        public void WhenClientDisconnects_Unassign()
+        {
+            server.Disconnect(Client1);
+
+            clientManager.Verify(_ => _.RemoveClient(Client1), Times.Once());
         }
 
         [Test]
@@ -222,32 +247,29 @@ namespace SignalRTicTacToe.Tests
 
             using (Sequence.Create())
             {
-                clientManager.Setup(_ => _.Unassign(Client3)).InSequence();
+                clientManager.Setup(_ => _.RemoveClient(Client3)).InSequence();
                 clientUpdater.Setup(_ => _.UpdateSpectators(spectators)).InSequence();
 
                 server.Disconnect(Client3);
             }
         }
-
-        [Test]
-        public void WhenGameIsCompleted_AndPlayerOWins_PlayerXShouldBeMadeASpectator()
-        {
-            Client1IsPlayerX();
-            Client2IsPlayerO();
-
-            game.SetupGet(_ => _.Status).Returns(GameState.OWins);
-
-            game.Raise(_ => _.GameCompleted += null, game);
-
-            clientManager.Verify(_ => _.RotateRoleOutWithSpectator(ClientRole.PlayerX));
-        }
     }
 
-    internal static class TicTacToeMockTestExtensions
+    internal static class MockTicTacToeExtensions
     {
         public static IReturnsResult<ITicTacToe> NextTurnFor(this Mock<ITicTacToe> game, PlayerType player)
         {
             return game.SetupGet(x => x.CurrentTurn).Returns(player);
+        }
+    }
+
+    internal static class MockClientManagerExtensions
+    {
+        public static void RaiseClientRoleAssigned(this Mock<IClientManager> clientManager, string clientId, ClientRole role)
+        {
+            clientManager.Raise(_ => _.ClientRoleAssigned += null
+                                    , clientManager.Object
+                                    , new ClientRoleAssignment { ClientId = clientId, Role = role });
         }
     }
 }

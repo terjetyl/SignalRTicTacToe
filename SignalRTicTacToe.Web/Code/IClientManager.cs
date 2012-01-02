@@ -8,6 +8,15 @@ namespace SignalRTicTacToe.Web.Code
         Spectator
     }
 
+    public class ClientRoleAssignment
+    {
+        public string ClientId { get; set; }
+        public ClientRole Role { get; set; }
+    }
+
+    public delegate void ClientRoleAssignedDelegate(object sender, string clientId);
+    public delegate void ClientRoleAssignedWithRoleDelegate(object sender, ClientRoleAssignment assignment);
+
     /// <summary>
     /// Determines and keeps track of tic-tac-toe client roles (Player X, O, or Spectator)
     /// </summary>
@@ -15,13 +24,13 @@ namespace SignalRTicTacToe.Web.Code
     {
         int SpectatorCount { get; }
 
-        event ClientRoleAssignedDelegate PlayerXAssigned;
-        event ClientRoleAssignedDelegate PlayerOAssigned;
-        event ClientRoleAssignedDelegate SpectatorAssigned;
+        event ClientRoleAssignedWithRoleDelegate ClientRoleAssigned;
 
-        void AssignRole(string clientId);
+        void AssignToNextAvailableRole(string clientId);
         ClientRole GetClientRole(string clientId);
-        void RotateRoleOutWithSpectator(ClientRole role);
-        void Unassign(string clientId);
+        void RemoveClient(string clientId);
+
+        // TODO: Rename or refactor to something more meaningful.
+        void RotateRolesKeepingAsPlayer(ClientRole keepAsPlayer);
     }
 }

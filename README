@@ -1,5 +1,7 @@
-A simple tic-tac-toe demo implemented using SignalR.
-
-Used IISExpress for local development.  I seemed to have issued with disconnects using WebDev.
+A simple tic-tac-toe demo implemented using SignalR.  This is a sample I put together to give me a chance to tinker
+with SignalR and to attempt to do TDD.  Any suggestions on improvement are very welcome. 
 
 See a demo at http://zooplet.com/tictactoe
+
+The web project is configured to use IIS Express.  The default timeout setting doesn't seem to have any effect when
+testing against WebDev.

@@ -1,9 +1,5 @@
 - Clean up TicTacToeTests.
-- Create TicTacToeServer tests (or rewrite using TDD).
 - Create TicTacToeHub tests.
-
-- Alternate who goes first after each game.
-- Rotate in spectators.
-	- Winner stays.
-	- Keep playing if draw.
+- Better way to display messages.
+- Easily identify if player is X, O or spectator.
 - Keep track of client stats.

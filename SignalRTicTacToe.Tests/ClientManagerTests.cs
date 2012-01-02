@@ -12,11 +12,11 @@ namespace SignalRTicTacToe.Tests
 
         protected ClientManager clientManager;
 
-        private void AssignRoles(params string[] clientIds)
+        private void AssignNextAvailableRoles(params string[] clientIds)
         {
             foreach (var clientId in clientIds)
             {
-                clientManager.AssignRole(clientId);
+                clientManager.AssignToNextAvailableRole(clientId);
             }
         }
 
@@ -27,63 +27,66 @@ namespace SignalRTicTacToe.Tests
         }
 
         [Test]
-        public void WhenFirstClientCallsAssignRole_AssignToPlayerXRole()
+        public void WhenPlayerXHasNotBeenAssigned_AssignToPlayerXRole()
         {
-            AssignRoles(Client1);
+            AssignNextAvailableRoles(Client1);
             Assert.AreEqual(ClientRole.PlayerX, clientManager.GetClientRole(Client1));
         }
 
         [Test]
-        public void TestPlayerXAssignedEventIsInvoked()
+        public void WhenPlayerXIsAssigned_ClientRoleAssignedEventIsInvoked()
         {
-            string playerX = null;
-            clientManager.PlayerXAssigned += (sender, id) => playerX = id;
+            ClientRoleAssignment roleAssignment = null;
+            clientManager.ClientRoleAssigned += (sender, assignment) => roleAssignment = assignment;
 
-            AssignRoles(Client1);
+            AssignNextAvailableRoles(Client1);
 
-            Assert.AreEqual(Client1, playerX);
+            Assert.AreEqual(Client1, roleAssignment.ClientId);
+            Assert.AreEqual(ClientRole.PlayerX, roleAssignment.Role);
         }
 
         [Test]
         public void WhenSecondClientCallsAssignRole_AssignToPlayerORole()
         {
-            AssignRoles(Client1, Client2);
+            AssignNextAvailableRoles(Client1, Client2);
             Assert.AreEqual(ClientRole.PlayerO, clientManager.GetClientRole(Client2));
         }
 
         [Test]
-        public void TestPlayerOAssignedEventIsInvoked()
+        public void WhenPlayerOIsAssigned_ClientRoleAssignedEventIsInvoked()
         {
-            string playerO = null;
-            clientManager.PlayerOAssigned += (sender, id) => playerO = id;
+            ClientRoleAssignment lastRoleAssignment = null;
+            clientManager.ClientRoleAssigned += (sender, assignment) => lastRoleAssignment = assignment;
 
-            AssignRoles(Client1, Client2);
+            AssignNextAvailableRoles("FirstClient", Client2);
 
-            Assert.AreEqual(Client2, playerO);
+            Assert.AreEqual(Client2, lastRoleAssignment.ClientId);
+            Assert.AreEqual(ClientRole.PlayerO, lastRoleAssignment.Role);
         }
 
         [Test]
         public void WhenThirdClientCallsAssignRole_AssignToSpectatorRole()
         {
-            AssignRoles(Client1, Client2, Client3);
+            AssignNextAvailableRoles(Client1, Client2, Client3);
             Assert.AreEqual(ClientRole.Spectator, clientManager.GetClientRole(Client3));
         }
 
         [Test]
-        public void TestSpectatorAssignedIsInvoked()
+        public void WhenSpectatorIsAssigned_ClientRoleAssignedEventIsInvoked()
         {
-            string spectatorId = null;
-            clientManager.SpectatorAssigned += (sender, id) => spectatorId = id;
+            ClientRoleAssignment lastRoleAssignment = null;
+            clientManager.ClientRoleAssigned += (sender, assignment) => lastRoleAssignment = assignment;
 
-            AssignRoles(Client1, Client2, Client3);
-            
-            Assert.AreEqual(Client3, spectatorId);
+            AssignNextAvailableRoles("FirstClient", "SecondClient", Client3);
+
+            Assert.AreEqual(Client3, lastRoleAssignment.ClientId);
+            Assert.AreEqual(ClientRole.Spectator, lastRoleAssignment.Role);
         }
 
         [Test]
         public void TestSpectatorCount()
         {
-            AssignRoles(Client1, Client2, Client3);
+            AssignNextAvailableRoles(Client1, Client2, Client3);
 
             Assert.AreEqual(1, clientManager.SpectatorCount);
         }
@@ -91,9 +94,9 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenPlayerXIsUnassigned_ClientShouldNoLongerHaveARole()
         {
-            AssignRoles(Client1);
+            AssignNextAvailableRoles(Client1);
 
-            clientManager.Unassign(Client1);
+            clientManager.RemoveClient(Client1);
 
             Assert.AreEqual(ClientRole.None, clientManager.GetClientRole(Client1));
         }
@@ -101,9 +104,9 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenPlayerXIsUnassigned_TheFirstSpectatorShouldTakeTheirPlace()
         {
-            AssignRoles(Client1, Client2, Client3);
+            AssignNextAvailableRoles(Client1, Client2, Client3);
 
-            clientManager.Unassign(Client1);
+            clientManager.RemoveClient(Client1);
 
             Assert.AreEqual(ClientRole.PlayerX, clientManager.GetClientRole(Client3));
         }
@@ -111,9 +114,9 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenPlayerOIsUnassigned_TheFirstSpectatorShouldTakeTheirPlace()
         {
-            AssignRoles(Client1, Client2, Client3);
+            AssignNextAvailableRoles(Client1, Client2, Client3);
 
-            clientManager.Unassign(Client2);
+            clientManager.RemoveClient(Client2);
 
             Assert.AreEqual(ClientRole.PlayerO, clientManager.GetClientRole(Client3));
         }
@@ -121,9 +124,9 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenPlayerOIsUnassigned_ClientShouldNoLongerHaveARole()
         {
-            AssignRoles(Client1, Client2);
+            AssignNextAvailableRoles(Client1, Client2);
 
-            clientManager.Unassign(Client2);
+            clientManager.RemoveClient(Client2);
 
             Assert.AreEqual(ClientRole.None, clientManager.GetClientRole(Client2));
         }
@@ -131,9 +134,9 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenSpectatorIsUnassigned_ClientShouldNoLongerHaveARole()
         {
-            AssignRoles(Client1, Client2, Client3);
+            AssignNextAvailableRoles(Client1, Client2, Client3);
 
-            clientManager.Unassign(Client3);
+            clientManager.RemoveClient(Client3);
 
             Assert.AreEqual(ClientRole.None, clientManager.GetClientRole(Client3));
         }
@@ -141,13 +144,43 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenSpectatorIsUnassigned_SpectatorCountShouldBeDecrementedByOne()
         {
-            AssignRoles(Client1, Client2, Client3);
+            AssignNextAvailableRoles(Client1, Client2, Client3);
 
             Assert.AreEqual(1, clientManager.SpectatorCount);
 
-            clientManager.Unassign(Client3);
+            clientManager.RemoveClient(Client3);
 
             Assert.AreEqual(0, clientManager.SpectatorCount);
+        }
+
+        [Test]
+        public void WhenRotatingRoles_AndNoSpectators_SwapPlayerXandO()
+        {
+            AssignNextAvailableRoles(Client1, Client2);
+
+            Assert.AreEqual(ClientRole.PlayerX, clientManager.GetClientRole(Client1), "Client1 should initially be Player X.");
+            Assert.AreEqual(ClientRole.PlayerO, clientManager.GetClientRole(Client2), "Client2 should initially be Player O.");
+
+            clientManager.RotateRolesKeepingAsPlayer(ClientRole.PlayerX);
+
+            Assert.AreEqual(ClientRole.PlayerO, clientManager.GetClientRole(Client1), "Client1 should be switched to Player O.");
+            Assert.AreEqual(ClientRole.PlayerX, clientManager.GetClientRole(Client2), "Client2 should be switched to Player X.");
+        }
+
+        [Test]
+        public void WhenRotatingRolesKeepingX_AndSpectatorsExist_ReplaceXWithSpectatorAndChangeXToO()
+        {
+            AssignNextAvailableRoles(Client1, Client2, Client3);
+
+            Assert.AreEqual(ClientRole.PlayerX, clientManager.GetClientRole(Client1), "Client1 should initially be Player X.");
+            Assert.AreEqual(ClientRole.PlayerO, clientManager.GetClientRole(Client2), "Client2 should initially be Player O.");
+            Assert.AreEqual(ClientRole.Spectator, clientManager.GetClientRole(Client3), "Client3 should initially be a spectator.");
+
+            clientManager.RotateRolesKeepingAsPlayer(ClientRole.PlayerX);
+
+            Assert.AreEqual(ClientRole.PlayerO, clientManager.GetClientRole(Client1), "Client1 should be switched to Player O.");
+            Assert.AreEqual(ClientRole.Spectator, clientManager.GetClientRole(Client2), "Client2 should be switched to a spectator.");
+            Assert.AreEqual(ClientRole.PlayerX, clientManager.GetClientRole(Client3), "Client3 should be switcher to Player X.");
         }
     }
 }

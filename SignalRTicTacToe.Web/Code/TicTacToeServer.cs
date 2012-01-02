@@ -4,11 +4,12 @@ using System.Threading.Tasks;
 
 namespace SignalRTicTacToe.Web.Code
 {
+    // TODO: Uh, thread-safety?
     public class TicTacToeServer
     {
         private const int ResetWaitTimeInSeconds = 5;
 
-        private static readonly Lazy<TicTacToeServer> _instance = new Lazy<TicTacToeServer>(() => new TicTacToeServer());
+        private static readonly Lazy<TicTacToeServer> _instance = new Lazy<TicTacToeServer>(CreateDefault);
 
         public static TicTacToeServer Instance
         {
@@ -19,27 +20,25 @@ namespace SignalRTicTacToe.Web.Code
         private readonly ITicTacToeClientUpdater _clientUpdater;
         private readonly ITicTacToe _ticTacToeGame;
 
-        public TicTacToeServer()
-            : this(new TicTacToe(), new ClientManager(), new TicTacToeSignalRClientUpdater())
-        {
-        }
-
         public TicTacToeServer(ITicTacToe ticTacToeGame, IClientManager clientManager, ITicTacToeClientUpdater clientUpdater)
         {
             _ticTacToeGame = ticTacToeGame;
             _ticTacToeGame.GameCompleted += OnGameCompleted;
 
             _clientManager = clientManager;
-            _clientManager.PlayerXAssigned += OnPlayerXAssigned;
-            _clientManager.PlayerOAssigned += OnPlayerOAssigned;
-            _clientManager.SpectatorAssigned += OnSpectatorAssigned;
+            _clientManager.ClientRoleAssigned += OnClientRoleAssigned;
 
             _clientUpdater = clientUpdater;
         }
 
+        public static TicTacToeServer CreateDefault()
+        {
+            return new TicTacToeServer(new TicTacToe(), new ClientManager(), new TicTacToeSignalRClientUpdater());
+        }
+
         public void Connect(string clientId)
         {
-            _clientManager.AssignRole(clientId);
+            _clientManager.AssignToNextAvailableRole(clientId);
         }
 
         public void PlaceMark(string clientId, int row, int col)
@@ -56,7 +55,7 @@ namespace SignalRTicTacToe.Web.Code
             }
         }
 
-        private void OnGameCompleted(object sender)
+        protected void OnGameCompleted(object sender)
         {
             switch (_ticTacToeGame.Status)
             {
@@ -65,12 +64,13 @@ namespace SignalRTicTacToe.Web.Code
                     break;
                 case GameState.OWins:
                     _clientUpdater.BroadcastMessage("O Wins!");
-                    _clientManager.RotateRoleOutWithSpectator(ClientRole.PlayerX);
                     break;
                 case GameState.Draw:
                     _clientUpdater.BroadcastMessage("Game is a draw.");
                     break;
             }
+
+            // TODO: Cover with unit tests.
             ResetGameAfterDelay();
         }
 
@@ -79,25 +79,52 @@ namespace SignalRTicTacToe.Web.Code
             Task.Factory.StartNew(() =>
                 {
                     Thread.Sleep(ResetWaitTimeInSeconds*1000);
-                    _ticTacToeGame.Reset();
-                    _clientUpdater.ResetGame();
+                    if (_ticTacToeGame.Status == GameState.XWins || _ticTacToeGame.Status == GameState.OWins)
+                    {
+                        _clientManager.RotateRolesKeepingAsPlayer(_ticTacToeGame.Status == GameState.XWins ? ClientRole.PlayerX : ClientRole.PlayerO);
+                    }
+                    ResetGame();
                 });
         }
 
-        private void OnPlayerXAssigned(object sender, string clientId)
+        private void ResetGame()
         {
-            _clientUpdater.SendMessage(clientId, "You are X's.");
+            _ticTacToeGame.Reset();
+            _clientUpdater.ResetGame();
         }
 
-        private void OnPlayerOAssigned(object sender, string clientId)
+        protected void OnClientRoleAssigned(object sender, ClientRoleAssignment assignment)
         {
-            _clientUpdater.SendMessage(clientId, "You are O's.");
+            switch (assignment.Role)
+            {
+                case ClientRole.PlayerX:
+                    ResetGame();
+                    _clientUpdater.BroadcastMessage("Player X is ready.");
+                    break;
+                case ClientRole.PlayerO:
+                    ResetGame();
+                    _clientUpdater.BroadcastMessage("Player O is ready.");
+                    break;
+                case ClientRole.Spectator:
+                    _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
+                    break;
+            } 
+            _clientUpdater.SendMessage(assignment.ClientId, GetClientAssigmentMessage(assignment.Role));
         }
 
-        private void OnSpectatorAssigned(object sender, string clientId)
+        private string GetClientAssigmentMessage(ClientRole role)
         {
-            _clientUpdater.SendMessage(clientId, "You are a spectator.");
-            _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
+            switch (role)
+            {
+                case ClientRole.PlayerX:
+                    return "You are X's.";
+                case ClientRole.PlayerO:
+                    return "You are O's.";
+                case ClientRole.Spectator:
+                    return "You are a spectator.";
+                default:
+                    throw new InvalidOperationException(String.Format("There is no assignment message for role '{0}'.", role.ToString()));
+            }
         }
 
         private bool IsPlayerX(string clientId)
@@ -124,18 +151,16 @@ namespace SignalRTicTacToe.Web.Code
         {
             ClientRole clientRole = _clientManager.GetClientRole(clientId);
 
-            _clientManager.Unassign(clientId);
-
-            switch (clientRole)
+            if (clientRole == ClientRole.PlayerX || clientRole == ClientRole.PlayerO)
             {
-                case ClientRole.PlayerO:
-                case ClientRole.PlayerX:
-                    _ticTacToeGame.Reset();
-                    _clientUpdater.ResetGame();
-                    break;
-                case ClientRole.Spectator:
-                    _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
-                    break;
+                _clientUpdater.BroadcastMessage(clientRole == ClientRole.PlayerX ? "Player X has left." : "Player O has left.");
+            }
+
+            _clientManager.RemoveClient(clientId);
+
+            if (clientRole == ClientRole.Spectator)
+            {
+                _clientUpdater.UpdateSpectators(_clientManager.SpectatorCount);
             }
         }
     }

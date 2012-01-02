@@ -12,9 +12,7 @@ namespace SignalRTicTacToe.Web.Code
         public ClientManager()
         {
             // Default anonymous delegates, so that we do not have to check for null when invoking these events.
-            PlayerXAssigned += (sender, id) => { };
-            PlayerOAssigned += (sender, id) => { };
-            SpectatorAssigned += (sender, id) => { };
+            ClientRoleAssigned += (sender, assignment) => { };
         }
 
         public int SpectatorCount
@@ -22,45 +20,85 @@ namespace SignalRTicTacToe.Web.Code
             get { return _spectators.Count; }
         }
 
-        public event ClientRoleAssignedDelegate PlayerXAssigned;
-        public event ClientRoleAssignedDelegate PlayerOAssigned;
-        public event ClientRoleAssignedDelegate SpectatorAssigned;
+        public event ClientRoleAssignedWithRoleDelegate ClientRoleAssigned;
 
-        public void AssignRole(string clientId)
+        public void AssignToNextAvailableRole(string clientId)
+        {
+            ClientRole nextAvailableRole = GetNextAvailableRole();
+            AssignClientToRole(clientId, nextAvailableRole);
+            ClientRoleAssigned.Invoke(this, new ClientRoleAssignment { ClientId = clientId, Role = nextAvailableRole });
+        }
+
+        private ClientRole GetNextAvailableRole()
         {
             if (_playerX == null)
+                return ClientRole.PlayerX;
+            if (_playerO == null)
+                return ClientRole.PlayerO;
+
+            return ClientRole.Spectator;
+        }
+
+        private void AssignClientToRole(string clientId, ClientRole nextAvailableRole)
+        {
+            switch (nextAvailableRole)
             {
-                _playerX = clientId;
-                PlayerXAssigned.Invoke(this, clientId);
+                case ClientRole.PlayerX:
+                    _playerX = clientId;
+                    break;
+                case ClientRole.PlayerO:
+                    _playerO = clientId;
+                    break;
+                case ClientRole.Spectator:
+                    _spectators.Add(clientId);
+                    break;
             }
-            else if (_playerO == null)
+        }
+
+        // TODO: Needs refactoring badly.
+        public void RotateRolesKeepingAsPlayer(ClientRole keepAsPlayer)
+        {
+            var playerFormallyKnownAsX = _playerX;
+            var playerFormallyKnownAsO = _playerO;
+            var firstSpectator = _spectators.FirstOrDefault();
+
+            _playerX = null;
+            _playerO = null;
+
+            if (firstSpectator != null)
             {
-                _playerO = clientId;
-                PlayerOAssigned.Invoke(this, clientId);
+                _spectators.Remove(firstSpectator);
+                if (keepAsPlayer == ClientRole.PlayerX)
+                {
+                    AssignToNextAvailableRole(firstSpectator);
+                    AssignToNextAvailableRole(playerFormallyKnownAsX);
+                    AssignToNextAvailableRole(playerFormallyKnownAsO);
+                }
+                else
+                {
+                    AssignToNextAvailableRole(playerFormallyKnownAsO);
+                    AssignToNextAvailableRole(firstSpectator);
+                    AssignToNextAvailableRole(playerFormallyKnownAsX);
+                }
             }
             else
             {
-                _spectators.Add(clientId);
-                SpectatorAssigned.Invoke(this, clientId);
+                AssignToNextAvailableRole(playerFormallyKnownAsO);
+                AssignToNextAvailableRole(playerFormallyKnownAsX);
             }
         }
 
-        public void RotateRoleOutWithSpectator(ClientRole role)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void Unassign(string clientId)
+        public void RemoveClient(string clientId)
         {
             if (_playerX == clientId)
             {
                 _playerX = null;
-                AssignFirstSpectatorToRole(ClientRole.PlayerX);
+                MoveFirstSpectatorIntoAvailablePlayerRole();
             }
             else if (_playerO == clientId)
             {
                 _playerO = null;
-                AssignFirstSpectatorToRole(ClientRole.PlayerO);
+                MoveFirstSpectatorIntoAvailablePlayerRole();
             }
             else if (_spectators.Contains(clientId))
             {
@@ -68,22 +106,13 @@ namespace SignalRTicTacToe.Web.Code
             }
         }
 
-        private void AssignFirstSpectatorToRole(ClientRole roleToReplace)
+        private void MoveFirstSpectatorIntoAvailablePlayerRole()
         {
             var firstSpectator = _spectators.FirstOrDefault();
-            if (firstSpectator == null) return;
-            
-            _spectators.Remove(firstSpectator);
-
-            if (roleToReplace == ClientRole.PlayerX)
+            if (firstSpectator != null)
             {
-                _playerX = firstSpectator;
-                PlayerXAssigned.Invoke(this, _playerX);
-            }
-            else if (roleToReplace == ClientRole.PlayerO)
-            {
-                _playerO = firstSpectator;
-                PlayerOAssigned.Invoke(this, _playerO);
+                RemoveClient(firstSpectator);
+                AssignToNextAvailableRole(firstSpectator);
             }
         }
 
