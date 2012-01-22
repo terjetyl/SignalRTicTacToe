@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,24 +10,18 @@ namespace SignalRTicTacToe.Web.Code
         private string _playerO;
         private readonly IList<string> _spectators = new List<string>();
 
-        public ClientManager()
-        {
-            // Default anonymous delegates, so that we do not have to check for null when invoking these events.
-            ClientRoleAssigned += (sender, assignment) => { };
-        }
-
         public int SpectatorCount
         {
             get { return _spectators.Count; }
         }
 
-        public event ClientRoleAssignedWithRoleDelegate ClientRoleAssigned;
+        public event EventHandler<ClientRoleAssignedArgs> ClientRoleAssigned = (sender, args) => { }; 
 
         public void AssignToNextAvailableRole(string clientId)
         {
             ClientRole nextAvailableRole = GetNextAvailableRole();
             AssignClientToRole(clientId, nextAvailableRole);
-            ClientRoleAssigned.Invoke(this, new ClientRoleAssignment { ClientId = clientId, Role = nextAvailableRole });
+            ClientRoleAssigned(this, new ClientRoleAssignedArgs(clientId, nextAvailableRole));
         }
 
         private ClientRole GetNextAvailableRole()

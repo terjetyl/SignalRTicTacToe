@@ -36,7 +36,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenPlayerXIsAssigned_ClientRoleAssignedEventIsInvoked()
         {
-            ClientRoleAssignment roleAssignment = null;
+            ClientRoleAssignedArgs roleAssignment = null;
             clientManager.ClientRoleAssigned += (sender, assignment) => roleAssignment = assignment;
 
             AssignNextAvailableRoles(Client1);
@@ -55,7 +55,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenPlayerOIsAssigned_ClientRoleAssignedEventIsInvoked()
         {
-            ClientRoleAssignment lastRoleAssignment = null;
+            ClientRoleAssignedArgs lastRoleAssignment = null;
             clientManager.ClientRoleAssigned += (sender, assignment) => lastRoleAssignment = assignment;
 
             AssignNextAvailableRoles("FirstClient", Client2);
@@ -74,7 +74,7 @@ namespace SignalRTicTacToe.Tests
         [Test]
         public void WhenSpectatorIsAssigned_ClientRoleAssignedEventIsInvoked()
         {
-            ClientRoleAssignment lastRoleAssignment = null;
+            ClientRoleAssignedArgs lastRoleAssignment = null;
             clientManager.ClientRoleAssigned += (sender, assignment) => lastRoleAssignment = assignment;
 
             AssignNextAvailableRoles("FirstClient", "SecondClient", Client3);

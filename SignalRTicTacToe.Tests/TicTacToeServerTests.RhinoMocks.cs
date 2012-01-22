@@ -10,8 +10,8 @@ namespace SignalRTicTacToe.Tests
         public static void RaiseClientRoleAssigned(this IClientManager clientManager, string clientId, ClientRole role)
         {
             clientManager.Raise(_ => _.ClientRoleAssigned += null,
-                clientManager,
-                new ClientRoleAssignment { ClientId = clientId, Role = role });
+                                clientManager,
+                                new ClientRoleAssignedArgs(clientId, role));
         }
     }
 
@@ -57,7 +57,7 @@ namespace SignalRTicTacToe.Tests
             clientUpdater.Expect(_ => _.BroadcastMessage(message)).Repeat.Once();
             game.Stub(_ => _.Status).Return(state);
 
-            game.Raise(_ => _.GameCompleted += null, game);
+            game.Raise(_ => _.GameCompleted += null, game, EventArgs.Empty);
 
             clientUpdater.VerifyAllExpectations();
         }

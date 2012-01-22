@@ -1,3 +1,5 @@
+using System;
+
 namespace SignalRTicTacToe.Web.Code
 {
     public enum ClientRole
@@ -8,14 +10,17 @@ namespace SignalRTicTacToe.Web.Code
         Spectator
     }
 
-    public class ClientRoleAssignment
+    public class ClientRoleAssignedArgs : EventArgs
     {
+        public ClientRoleAssignedArgs(string clientId, ClientRole role)
+        {
+            ClientId = clientId;
+            Role = role;
+        }
+        
         public string ClientId { get; set; }
         public ClientRole Role { get; set; }
     }
-
-    public delegate void ClientRoleAssignedDelegate(object sender, string clientId);
-    public delegate void ClientRoleAssignedWithRoleDelegate(object sender, ClientRoleAssignment assignment);
 
     /// <summary>
     /// Determines and keeps track of tic-tac-toe client roles (Player X, O, or Spectator)
@@ -24,7 +29,7 @@ namespace SignalRTicTacToe.Web.Code
     {
         int SpectatorCount { get; }
 
-        event ClientRoleAssignedWithRoleDelegate ClientRoleAssigned;
+        event EventHandler<ClientRoleAssignedArgs> ClientRoleAssigned; 
 
         void AssignToNextAvailableRole(string clientId);
         ClientRole GetClientRole(string clientId);

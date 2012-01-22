@@ -17,8 +17,6 @@ namespace SignalRTicTacToe.Web.Code
         O
     }
 
-    public delegate void GameCompletedDelegate(object sender);
-
     public class OutOfTurnException : InvalidOperationException
     {
     }
@@ -30,15 +28,13 @@ namespace SignalRTicTacToe.Web.Code
         public TicTacToe()
         {
             Reset();
-            // Default anonymous delegate, so we do not have to check for null when invoking the event.
-            GameCompleted += (sender) => { };
         }
 
         public GameState Status { get; private set; }
 
         public PlayerType CurrentTurn { get; private set; }
 
-        public event GameCompletedDelegate GameCompleted;
+        public event EventHandler GameCompleted = (sender, args) => { };
 
         public PlayerType GetSquareState(int row, int col)
         {
@@ -87,12 +83,12 @@ namespace SignalRTicTacToe.Web.Code
             if (IsThreeInARow(row) || IsThreeInAColumn(col) || IsThreeInADiagonal())
             {
                 Status = (CurrentTurn == PlayerType.X) ? GameState.XWins : GameState.OWins;
-                GameCompleted(this);
+                GameCompleted(this, EventArgs.Empty);
             }
             else if (IsDraw())
             {
                 Status = GameState.Draw;
-                GameCompleted(this);
+                GameCompleted(this, EventArgs.Empty);
             }
         }
 

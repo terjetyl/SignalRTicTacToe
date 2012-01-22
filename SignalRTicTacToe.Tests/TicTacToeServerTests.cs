@@ -1,3 +1,4 @@
+using System;
 using Moq;
 using Moq.Language.Flow;
 using Moq.Sequences;
@@ -41,7 +42,7 @@ namespace SignalRTicTacToe.Tests
         {
             game.Setup(g => g.Status).Returns(state);
 
-            game.Raise(g => g.GameCompleted += null, game.Object);
+            game.Raise(g => g.GameCompleted += null, game.Object, EventArgs.Empty);
 
             clientUpdater.Verify(x => x.BroadcastMessage(message), Times.Once());
         }
@@ -269,7 +270,7 @@ namespace SignalRTicTacToe.Tests
         {
             clientManager.Raise(_ => _.ClientRoleAssigned += null
                                     , clientManager.Object
-                                    , new ClientRoleAssignment { ClientId = clientId, Role = role });
+                                    , new ClientRoleAssignedArgs(clientId, role));
         }
     }
 }

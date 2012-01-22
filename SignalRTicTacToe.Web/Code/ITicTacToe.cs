@@ -1,3 +1,5 @@
+using System;
+
 namespace SignalRTicTacToe.Web.Code
 {
     public interface ITicTacToe
@@ -5,7 +7,7 @@ namespace SignalRTicTacToe.Web.Code
         GameState Status { get; }
         PlayerType CurrentTurn { get; }
 
-        event GameCompletedDelegate GameCompleted;
+        event EventHandler GameCompleted;
         
         PlayerType GetSquareState(int row, int col);
         void PlaceX(int row, int col);

@@ -73,7 +73,7 @@ namespace SignalRTicTacToe.Tests
 
         private void PassIfGameCompleted(Action playGame)
         {
-            ticTacToe.GameCompleted += (sender) => Assert.Pass();
+            ticTacToe.GameCompleted += (sender, args) => Assert.Pass();
 
             playGame.Invoke();
 

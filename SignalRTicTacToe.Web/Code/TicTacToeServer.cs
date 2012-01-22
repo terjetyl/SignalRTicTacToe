@@ -71,8 +71,9 @@ namespace SignalRTicTacToe.Web.Code
             }
         }
 
-        protected void OnGameCompleted(object sender)
+        protected void OnGameCompleted(object sender, EventArgs args)
         {
+            // TODO: The status should be passed as an event arguments.
             switch (_ticTacToeGame.Status)
             {
                 case GameState.XWins:
@@ -114,7 +115,7 @@ namespace SignalRTicTacToe.Web.Code
             _clientUpdater.ResetGame();
         }
 
-        protected void OnClientRoleAssigned(object sender, ClientRoleAssignment assignment)
+        protected void OnClientRoleAssigned(object sender, ClientRoleAssignedArgs assignment)
         {
             switch (assignment.Role)
             {
