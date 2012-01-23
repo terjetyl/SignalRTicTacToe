@@ -55,9 +55,8 @@ namespace SignalRTicTacToe.Tests
         private void VerifyThatASpecificMessageBroadcastedWhenGameCompleted(string message, GameState state)
         {
             clientUpdater.Expect(_ => _.BroadcastMessage(message)).Repeat.Once();
-            game.Stub(_ => _.Status).Return(state);
 
-            game.Raise(_ => _.GameCompleted += null, game, EventArgs.Empty);
+            game.Raise(_ => _.GameCompleted += null, game, new GameCompletedEventArgs(state));
 
             clientUpdater.VerifyAllExpectations();
         }

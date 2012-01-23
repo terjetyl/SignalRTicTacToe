@@ -34,7 +34,7 @@ namespace SignalRTicTacToe.Web.Code
 
         public PlayerType CurrentTurn { get; private set; }
 
-        public event EventHandler GameCompleted = (sender, args) => { };
+        public event EventHandler<GameCompletedEventArgs> GameCompleted = (sender, args) => { };
 
         public PlayerType GetSquareState(int row, int col)
         {
@@ -82,13 +82,14 @@ namespace SignalRTicTacToe.Web.Code
         {
             if (IsThreeInARow(row) || IsThreeInAColumn(col) || IsThreeInADiagonal())
             {
-                Status = (CurrentTurn == PlayerType.X) ? GameState.XWins : GameState.OWins;
-                GameCompleted(this, EventArgs.Empty);
+                GameState currentGameState = (CurrentTurn == PlayerType.X) ? GameState.XWins : GameState.OWins;
+                Status = currentGameState;
+                GameCompleted(this, new GameCompletedEventArgs(currentGameState));
             }
             else if (IsDraw())
             {
                 Status = GameState.Draw;
-                GameCompleted(this, EventArgs.Empty);
+                GameCompleted(this, new GameCompletedEventArgs(GameState.Draw));
             }
         }
 

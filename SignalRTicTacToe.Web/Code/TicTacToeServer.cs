@@ -71,10 +71,9 @@ namespace SignalRTicTacToe.Web.Code
             }
         }
 
-        protected void OnGameCompleted(object sender, EventArgs args)
+        protected void OnGameCompleted(object sender, GameCompletedEventArgs args)
         {
-            // TODO: The status should be passed as an event arguments.
-            switch (_ticTacToeGame.Status)
+            switch (args.GameState)
             {
                 case GameState.XWins:
                     _clientUpdater.BroadcastMessage("X Wins!");
